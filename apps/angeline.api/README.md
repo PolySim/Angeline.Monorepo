@@ -96,3 +96,150 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+# API Angeline
+
+Cette API NestJS utilise TypeORM avec SQLite pour gérer les informations, catégories et images.
+
+## Installation
+
+```bash
+pnpm install
+```
+
+## Démarrage
+
+```bash
+# Développement
+pnpm start:dev
+
+# Production
+pnpm start:prod
+```
+
+**Note :** L'API fonctionne sur le port 3001 par défaut pour éviter les conflits avec le frontend qui utilise le port 3000.
+
+## Structure de la base de données
+
+L'API utilise trois entités principales :
+
+### Information
+
+- `id`: Identifiant unique (TEXT, PRIMARY KEY)
+- `name`: Nom de l'information (TEXT, NOT NULL)
+- `content`: Contenu de l'information (TEXT, default: '')
+- `lang`: Langue de l'information (TEXT, NOT NULL)
+
+### Category
+
+- `id`: Identifiant unique (TEXT, PRIMARY KEY)
+- `name`: Nom de la catégorie (TEXT, NOT NULL)
+- `article`: Article associé (TEXT, nullable)
+- `ordered`: Ordre d'affichage (INTEGER, NOT NULL)
+- `disabled`: Statut désactivé (BOOLEAN, default: FALSE)
+
+### Image
+
+- `id`: Identifiant unique (TEXT, PRIMARY KEY)
+- `name`: Nom de l'image (TEXT, NOT NULL)
+- `path`: Chemin vers l'image (TEXT, NOT NULL)
+- `description`: Description de l'image (TEXT, nullable)
+- `category`: ID de la catégorie (TEXT, NOT NULL, FOREIGN KEY)
+- `ordered`: Ordre d'affichage (INTEGER, NOT NULL)
+
+## Endpoints API
+
+### Information
+
+- `GET /information` - Récupérer toutes les informations
+- `GET /information/:id` - Récupérer une information par ID
+- `GET /information/by-name/:name` - Récupérer les informations par nom
+- `GET /information/by-lang/:lang` - Récupérer les informations par langue
+- `GET /information/by-name-and-lang?name=...&lang=...` - Récupérer une information par nom et langue
+- `POST /information` - Créer une nouvelle information
+- `PUT /information/:id` - Mettre à jour une information
+- `DELETE /information/:id` - Supprimer une information
+
+### Category
+
+- `GET /category` - Récupérer toutes les catégories
+- `GET /category/active` - Récupérer les catégories actives
+- `GET /category/with-images` - Récupérer les catégories avec leurs images
+- `GET /category/:id` - Récupérer une catégorie par ID
+- `GET /category/by-name/:name` - Récupérer une catégorie par nom
+- `POST /category` - Créer une nouvelle catégorie
+- `PUT /category/:id` - Mettre à jour une catégorie
+- `PUT /category/:id/toggle-disabled` - Activer/désactiver une catégorie
+- `DELETE /category/:id` - Supprimer une catégorie
+
+### Image
+
+- `GET /image` - Récupérer toutes les images
+- `GET /image/with-category` - Récupérer les images avec leurs catégories
+- `GET /image/:id` - Récupérer une image par ID
+- `GET /image/by-name/:name` - Récupérer les images par nom
+- `GET /image/by-category/:categoryId` - Récupérer les images par catégorie
+- `POST /image` - Créer une nouvelle image
+- `PUT /image/:id` - Mettre à jour une image
+- `PUT /image/reorder/:categoryId` - Réorganiser les images d'une catégorie
+- `DELETE /image/:id` - Supprimer une image
+
+## Exemples d'utilisation
+
+### Créer une catégorie
+
+```bash
+curl -X POST http://localhost:3001/category \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Portraits",
+    "article": "Les",
+    "ordered": 1
+  }'
+```
+
+### Créer une information
+
+```bash
+curl -X POST http://localhost:3001/information \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "welcome",
+    "content": "Bienvenue sur le site",
+    "lang": "fr"
+  }'
+```
+
+### Créer une image
+
+```bash
+curl -X POST http://localhost:3001/image \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "portrait1",
+    "path": "/images/portrait1.jpg",
+    "description": "Premier portrait",
+    "category": "cat_1234567890_abc123",
+    "ordered": 1
+  }'
+```
+
+## Architecture
+
+L'API suit une architecture en couches :
+
+- **Controllers** : Gèrent les requêtes HTTP et les réponses
+- **Services** : Contiennent la logique métier
+- **Repositories** : Gèrent l'accès aux données avec TypeORM
+- **Entities** : Définissent la structure des données
+- **Types** : Définis dans le package `@repo/types`
+
+## Configuration
+
+La base de données SQLite est automatiquement initialisée au démarrage de l'application avec le schéma défini dans `src/db/init_db.sql`.
+
+TypeORM est configuré avec :
+
+- `synchronize: false` (pas de synchronisation automatique)
+- `logging: true` (logs des requêtes SQL)
+- Pas de migrations (utilisation du script SQL d'initialisation)
