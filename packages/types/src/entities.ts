@@ -2,7 +2,12 @@ export interface Information {
   id: string;
   name: string;
   content: string;
-  lang: string;
+  lang: Lang;
+}
+
+export enum Lang {
+  FR = "fr",
+  EN = "us",
 }
 
 export interface Category {

@@ -1,8 +1,16 @@
 "use client";
 
-import { useCategoriesActive } from "@/queries/useCategory.queries";
+import { useCategoriesActive } from "@/queries/useCategory";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "../ui/navigation-menu";
 
 const MenuDesktop = () => {
   const { data: categories, isPending } = useCategoriesActive();
@@ -12,57 +20,84 @@ const MenuDesktop = () => {
   );
 
   return (
-    <div className="hidden md:flex flex-wrap gap-y-6 justify-center items-center w-9/12 mt-8 mx-auto font-bold font-helvetica text-md text-center">
-      <Link
-        href={`/portfolio/${categories?.find((category) => category.ordered === 3)?.id}`}
-        className="hover:text-primary transition"
-      >
-        PORTFOLIO
-      </Link>
-      <span className="opacity-15 text-40 mx-6 ">⚫</span>
-      <div className="flex flex-col relative group z-20">
-        <p className="group-hover:text-primary transition">REPORTAGE</p>
-        <div className="hidden absolute w-max rounded-b-lg top-0 mt-5 p-1 pt-3 -left-3 text-left group-hover:flex flex-col gap-1 bg-white">
-          {isPending ? (
-            <div className="flex justify-center items-center h-full w-full min-w-32 min-h-10">
-              <Loader2 className="animate-spin text-primary" />
-            </div>
-          ) : (
-            (categoriesFiltered || []).map((category) => (
-              <Link
-                key={category.id}
-                href={`/portfolio/${category.id}`}
-                className="hover:bg-primary/20 transition px-3 py-0.5 rounded-md"
-              >
-                {category.name}
-              </Link>
-            ))
-          )}
-        </div>
-      </div>
-      <span className="opacity-15 text-40 mx-6 ">⚫</span>
-      <Link
-        href={`/portfolio/${categories?.find((category) => category.ordered === 1)?.id}`}
-        className="hover:text-primary transition"
-      >
-        PORTRAITS
-      </Link>
-      <span className="opacity-15 text-40 mx-6 ">⚫</span>
-      <Link
-        href={`/portfolio/${categories?.find((category) => category.ordered === 2)?.id}`}
-        className="hover:text-primary transition"
-      >
-        PUBLICATIONS
-      </Link>
-      <span className="opacity-15 text-40 mx-6 ">⚫</span>
-      <Link href="/contact" className="hover:text-primary transition">
-        CONTACT
-      </Link>
-      <span className="opacity-15 text-40 mx-6 ">⚫</span>
-      <Link href="/apropos" className="hover:text-primary transition">
-        A PROPOS
-      </Link>
-    </div>
+    <NavigationMenu viewport={false} className="w-full max-w-[100vw]">
+      <NavigationMenuList className="w-9/12 mt-8 mx-auto font-bold font-helvetica text-md text-center">
+        <NavigationMenuItem>
+          <NavigationMenuLink asChild>
+            <Link
+              href={`/portfolio/${categories?.find((category) => category.ordered === 3)?.id}`}
+              className="hover:text-primary transition"
+            >
+              PORTFOLIO
+            </Link>
+          </NavigationMenuLink>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <NavigationMenuTrigger className="hover:text-primary transition">
+            <p className="font-bold">REPORTAGE</p>
+            <NavigationMenuContent className="bg-white z-50">
+              <ul className="grid gap-0.5 md:w-[400px] lg:w-[500px]">
+                {isPending ? (
+                  <div className="flex justify-center items-center h-full w-full min-w-32 min-h-10">
+                    <Loader2 className="animate-spin text-primary" />
+                  </div>
+                ) : (
+                  (categoriesFiltered || []).map((category) => (
+                    <li className="row-span-3" key={category.id}>
+                      <NavigationMenuLink asChild>
+                        <Link
+                          href={`/portfolio/${category.id}`}
+                          className="hover:bg-primary/20 transition rounded-md px-2 py-1 font-semibold"
+                        >
+                          {category.name}
+                        </Link>
+                      </NavigationMenuLink>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </NavigationMenuContent>
+          </NavigationMenuTrigger>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <NavigationMenuLink asChild>
+            <Link
+              href={`/portfolio/${categories?.find((category) => category.ordered === 1)?.id}`}
+              className="hover:text-primary transition"
+            >
+              PORTRAITS
+            </Link>
+          </NavigationMenuLink>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <NavigationMenuLink asChild>
+            <Link
+              href={`/portfolio/${categories?.find((category) => category.ordered === 2)?.id}`}
+              className="hover:text-primary transition"
+            >
+              PUBLICATIONS
+            </Link>
+          </NavigationMenuLink>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <NavigationMenuLink asChild>
+            <Link href="/contact" className="hover:text-primary transition">
+              CONTACT
+            </Link>
+          </NavigationMenuLink>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <NavigationMenuLink asChild>
+            <Link
+              href="/apropos"
+              className="hover:text-primary transition whitespace-nowrap"
+            >
+              A PROPOS
+            </Link>
+          </NavigationMenuLink>
+        </NavigationMenuItem>
+      </NavigationMenuList>
+    </NavigationMenu>
   );
 };
 
