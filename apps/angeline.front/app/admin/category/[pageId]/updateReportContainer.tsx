@@ -3,6 +3,7 @@
 import { useCategoryById } from "@/queries/useCategory";
 import { useImages } from "@/queries/useImage";
 import { Loader2 } from "lucide-react";
+import ReorderImage from "./reorderImage";
 import UpdateCategoryInformation from "./updateCategoryInformation";
 
 export default function UpdateReportContainer() {
@@ -18,6 +19,7 @@ export default function UpdateReportContainer() {
       ) : (
         <>
           <UpdateCategoryInformation />
+          <ReorderImage />
         </>
       )}
     </>
