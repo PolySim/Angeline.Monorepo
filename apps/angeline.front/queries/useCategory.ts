@@ -6,6 +6,7 @@ import {
   getCategoryById,
   toggleCategoryVisibility,
   updateCategoriesOrder,
+  updateCategory,
 } from "@/action/category.action";
 import { useAppParams } from "@/hook/useAppParams";
 import { Category } from "@repo/types/entities";
@@ -171,6 +172,37 @@ export const useUpdateCategoriesOrder = (props?: {
       toast.error("Une erreur est survenue lors de la sauvegarde");
     },
     onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+  });
+};
+
+export const useUpdateCategory = () => {
+  const queryClient = useQueryClient();
+  const { pageId: categoryId } = useAppParams();
+
+  return useMutation({
+    mutationFn: ({ content }: { content: Partial<Category> }) =>
+      updateCategory({ categoryId, content }),
+    onMutate: (categoryId) => {
+      queryClient.cancelQueries({ queryKey: ["category", categoryId] });
+    },
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success("Catégorie modifiée avec succès");
+      } else {
+        toast.error(
+          "Une erreur est survenue lors de la modification de la catégorie"
+        );
+      }
+    },
+    onError: () => {
+      toast.error(
+        "Une erreur est survenue lors de la modification de la catégorie"
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["category", categoryId] });
       queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
   });

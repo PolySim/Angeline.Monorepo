@@ -111,7 +111,8 @@ export const createCategory = async ({
     const { getToken } = await auth();
     const token = await getToken();
     if (!token) {
-      throw new Error("Unauthorized");
+      console.error("Unauthorized");
+      return { success: false };
     }
 
     const response = await fetch(`${config.API_URL}/category`, {
@@ -177,7 +178,8 @@ export const updateCategoriesOrder = async ({
     const { getToken } = await auth();
     const token = await getToken();
     if (!token) {
-      throw new Error("Unauthorized");
+      console.error("Unauthorized");
+      return { success: false };
     }
 
     const response = await fetch(`${config.API_URL}/category/order`, {
@@ -201,6 +203,46 @@ export const updateCategoriesOrder = async ({
     return { success: true, data };
   } catch (error) {
     console.error("Error updating categories order", error);
+    return { success: false };
+  }
+};
+
+export const updateCategory = async ({
+  categoryId,
+  content,
+}: {
+  categoryId: string;
+  content: Partial<Category>;
+}) => {
+  try {
+    const { getToken } = await auth();
+    const token = await getToken();
+    if (!token) {
+      console.error("Unauthorized");
+      return { success: false };
+    }
+
+    const response = await fetch(`${config.API_URL}/category/${categoryId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...content }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to update category", response);
+      return { success: false };
+    }
+
+    revalidateTag("categories-all");
+    revalidateTag(`categories-${categoryId}`);
+    revalidateTag("categories-active");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating category", error);
     return { success: false };
   }
 };
