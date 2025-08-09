@@ -20,6 +20,7 @@ type FormInputProps = {
   onChange?: (value: string) => void;
   className?: string;
   placeholder?: string;
+  required?: boolean;
 };
 
 const FormInput = ({
@@ -31,6 +32,7 @@ const FormInput = ({
   onChange,
   className,
   placeholder,
+  required,
 }: FormInputProps) => {
   const { control } = useFormContext();
 
@@ -52,6 +54,7 @@ const FormInput = ({
                 onChange?.(e.target.value);
               }}
               className={className}
+              required={required}
             />
           </FormControl>
           {description && <FormDescription>{description}</FormDescription>}
