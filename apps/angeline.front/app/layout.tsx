@@ -1,7 +1,8 @@
+import Footer from "@/components/footer/footer";
 import Header from "@/components/header/header";
+import { Toaster } from "@/components/ui/sonner";
 import { ReactQueryProvider } from "@/lib/react-query";
 import "./globals.css";
-import Footer from "@/components/footer/footer";
 
 export default function RootLayout({
   children,
@@ -15,6 +16,7 @@ export default function RootLayout({
           <Header />
           {children}
           <Footer />
+          <Toaster richColors closeButton />
         </body>
       </ReactQueryProvider>
     </html>
