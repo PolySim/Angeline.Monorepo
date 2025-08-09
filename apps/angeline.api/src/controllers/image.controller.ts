@@ -8,11 +8,13 @@ import {
   Put,
   Res,
   UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { File } from 'multer';
+import { AuthGuard } from 'src/middleware/AuthGuard';
 import { ImageService } from '../services/image.service';
 import { UpdateImageDto } from '../types';
 
@@ -35,6 +37,7 @@ export class ImageController {
     return res.sendFile(await this.imageService.sendImageBlur(id));
   }
 
+  @UseGuards(AuthGuard)
   @Post(':pageId')
   @UseInterceptors(FilesInterceptor('images'))
   async create(
@@ -44,11 +47,13 @@ export class ImageController {
     return this.imageService.create(pageId, files);
   }
 
+  @UseGuards(AuthGuard)
   @Put(':id')
   async update(@Param('id') id: string, @Body() updateDto: UpdateImageDto) {
     return this.imageService.update(id, updateDto);
   }
 
+  @UseGuards(AuthGuard)
   @Put('reorder/:categoryId')
   async reorderImages(
     @Param('categoryId') categoryId: string,
@@ -58,6 +63,7 @@ export class ImageController {
     return { message: 'Images reordered successfully' };
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   async delete(@Param('id') id: string) {
     await this.imageService.delete(id);

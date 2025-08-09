@@ -6,7 +6,9 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from 'src/middleware/AuthGuard';
 import { CategoryService } from '../services/category.service';
 import { CreateCategoryDto, UpdateCategoryDto } from '../types';
 
@@ -29,21 +31,25 @@ export class CategoryController {
     return this.categoryService.findById(id);
   }
 
+  @UseGuards(AuthGuard)
   @Post()
   async create(@Body() createDto: CreateCategoryDto) {
     return this.categoryService.create(createDto);
   }
 
+  @UseGuards(AuthGuard)
   @Put(':id')
   async update(@Param('id') id: string, @Body() updateDto: UpdateCategoryDto) {
     return this.categoryService.update(id, updateDto);
   }
 
+  @UseGuards(AuthGuard)
   @Put(':id/toggle-disabled')
   async toggleDisabled(@Param('id') id: string) {
     return this.categoryService.toggleDisabled(id);
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   async delete(@Param('id') id: string) {
     await this.categoryService.delete(id);
