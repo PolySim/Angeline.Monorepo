@@ -20,7 +20,7 @@ const MenuDesktop = () => {
   );
 
   return (
-    <NavigationMenu viewport={false} className="w-full max-w-[100vw]">
+    <NavigationMenu viewport={false} className="w-full max-w-[100vw] flex-none">
       <NavigationMenuList className="w-9/12 mt-8 mx-auto font-bold font-helvetica text-md text-center">
         <NavigationMenuItem>
           <NavigationMenuLink asChild>

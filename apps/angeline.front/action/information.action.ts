@@ -5,7 +5,12 @@ import { Information } from "@repo/types/entities";
 
 export const getBiography = async () => {
   try {
-    const response = await fetch(`${config.API_URL}/information`);
+    const response = await fetch(`${config.API_URL}/information`, {
+      cache: "force-cache",
+      next: {
+        tags: ["information", "biography"],
+      },
+    });
     if (!response.ok) {
       console.error("Error fetching biography", response);
       return null;
