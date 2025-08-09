@@ -47,6 +47,10 @@ export interface UpdateCategoryDto {
   disabled?: boolean;
 }
 
+export interface UpdateCategoryOrderDto {
+  orderedIds: string[];
+}
+
 export interface CreateImageDto {
   name: string;
   path: string;

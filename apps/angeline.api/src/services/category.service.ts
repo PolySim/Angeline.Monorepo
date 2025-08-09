@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CategoryRepository } from '../repositories/category.repository';
-import { Category, CreateCategoryDto, UpdateCategoryDto } from '../types';
+import {
+  Category,
+  CreateCategoryDto,
+  UpdateCategoryDto,
+  UpdateCategoryOrderDto,
+} from '../types';
 
 @Injectable()
 export class CategoryService {
@@ -43,6 +48,10 @@ export class CategoryService {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
     return category;
+  }
+
+  async updateOrder(orderedIds: UpdateCategoryOrderDto): Promise<Category[]> {
+    return this.categoryRepository.updateOrder(orderedIds);
   }
 
   async delete(id: string): Promise<void> {

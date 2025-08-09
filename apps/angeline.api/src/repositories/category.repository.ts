@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Category } from '../entities/category.entity';
-import { CreateCategoryDto, UpdateCategoryDto } from '../types';
+import {
+  CreateCategoryDto,
+  UpdateCategoryDto,
+  UpdateCategoryOrderDto,
+} from '../types';
 
 @Injectable()
 export class CategoryRepository extends Repository<Category> {
@@ -48,5 +52,16 @@ export class CategoryRepository extends Repository<Category> {
       return this.save(category);
     }
     return null;
+  }
+
+  async updateOrder(orderedIds: UpdateCategoryOrderDto): Promise<Category[]> {
+    const categories = await this.find({ order: { ordered: 'ASC' } });
+    categories.forEach((category) => {
+      category.ordered =
+        category.ordered <= 3
+          ? category.ordered
+          : orderedIds.orderedIds.findIndex((id) => id === category.id) + 4;
+    });
+    return this.save(categories);
   }
 }

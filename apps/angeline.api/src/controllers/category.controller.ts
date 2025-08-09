@@ -10,7 +10,11 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from 'src/middleware/AuthGuard';
 import { CategoryService } from '../services/category.service';
-import { CreateCategoryDto, UpdateCategoryDto } from '../types';
+import {
+  CreateCategoryDto,
+  UpdateCategoryDto,
+  UpdateCategoryOrderDto,
+} from '../types';
 
 @Controller('category')
 export class CategoryController {
@@ -35,6 +39,13 @@ export class CategoryController {
   @Post()
   async create(@Body() createDto: CreateCategoryDto) {
     return this.categoryService.create(createDto);
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('order')
+  async updateOrder(@Body() orderedIds: UpdateCategoryOrderDto) {
+    console.log(orderedIds);
+    return this.categoryService.updateOrder(orderedIds);
   }
 
   @UseGuards(AuthGuard)

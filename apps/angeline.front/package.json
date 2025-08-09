@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.30.0",
+    "@formkit/drag-and-drop": "^0.5.3",
     "@getbrevo/brevo": "^3.0.1",
     "@hookform/resolvers": "^5.2.1",
     "@radix-ui/react-dialog": "^1.1.14",

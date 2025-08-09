@@ -5,6 +5,7 @@ import {
   getCategoriesActive,
   getCategoryById,
   toggleCategoryVisibility,
+  updateCategoriesOrder,
 } from "@/action/category.action";
 import { useAppParams } from "@/hook/useAppParams";
 import { Category } from "@repo/types/entities";
@@ -135,6 +136,39 @@ export const useDeleteCategory = () => {
       toast.error(
         "Une erreur est survenue lors de la suppression du reportage"
       );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+  });
+};
+
+export const useUpdateCategoriesOrder = (props?: {
+  onErrorCallback?: () => void;
+}) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ orderedIds }: { orderedIds: string[] }) =>
+      updateCategoriesOrder({ orderedIds }),
+    onMutate: () => {
+      queryClient.cancelQueries({ queryKey: ["categories", "all"] });
+    },
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success("Sauvegarde réussie");
+      } else {
+        if (props?.onErrorCallback) {
+          props.onErrorCallback();
+        }
+        toast.error("Une erreur est survenue lors de la sauvegarde");
+      }
+    },
+    onError: () => {
+      if (props?.onErrorCallback) {
+        props.onErrorCallback();
+      }
+      toast.error("Une erreur est survenue lors de la sauvegarde");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });

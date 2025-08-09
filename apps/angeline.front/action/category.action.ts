@@ -167,3 +167,40 @@ export const deleteCategory = async (categoryId: string) => {
     return { success: false };
   }
 };
+
+export const updateCategoriesOrder = async ({
+  orderedIds,
+}: {
+  orderedIds: string[];
+}) => {
+  try {
+    const { getToken } = await auth();
+    const token = await getToken();
+    if (!token) {
+      throw new Error("Unauthorized");
+    }
+
+    const response = await fetch(`${config.API_URL}/category/order`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ orderedIds }),
+    });
+
+    if (!response.ok) {
+      console.error("Failed to update categories order", response);
+      return { success: false };
+    }
+
+    revalidateTag("categories-all");
+    revalidateTag("categories-active");
+
+    const data = await response.json();
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error updating categories order", error);
+    return { success: false };
+  }
+};
