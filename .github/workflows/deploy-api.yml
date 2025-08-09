@@ -15,7 +15,7 @@ jobs:
         run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u "${{ secrets.REGISTRY_USER }}" --password-stdin
 
       - name: Build image
-        run: docker build -t ghcr.io/polysim/angeline.api:latest -f ./Dockerfile .
+        run: docker build -t ghcr.io/polysim/angeline.api:latest -f apps/angeline.api/Dockerfile .
 
       - name: Push image
         run: docker push ghcr.io/polysim/angeline.api:latest
