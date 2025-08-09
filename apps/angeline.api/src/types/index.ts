@@ -36,10 +36,8 @@ export interface UpdateInformationDto {
 }
 
 export interface CreateCategoryDto {
-  orname: string;
-  article?: string;
-  ordered: number;
-  disabled?: boolean;
+  name: string;
+  article: string;
 }
 
 export interface UpdateCategoryDto {

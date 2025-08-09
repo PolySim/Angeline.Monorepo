@@ -23,6 +23,12 @@ export class CategoryRepository extends Repository<Category> {
       disabled: false,
       ...createDto,
     });
+    category.disabled = false;
+    const maxOrdered = await this.find({
+      select: { ordered: true },
+      order: { ordered: 'DESC' },
+    });
+    category.ordered = maxOrdered[0].ordered + 1;
     const saved = await this.save(category);
     return saved as unknown as Category;
   }
