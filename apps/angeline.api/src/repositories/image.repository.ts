@@ -4,7 +4,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { File } from 'multer';
 import * as fs from 'node:fs';
-import sharp from 'sharp';
+import * as sharp from 'sharp';
 import { config } from 'src/config/config';
 import { DataSource, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
@@ -116,6 +116,7 @@ export class ImageRepository extends Repository<Image> {
       fs.mkdirSync(directoryPath, { recursive: true });
     }
 
-    await sharp(file.buffer).toFile(name);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    await sharp(file.buffer).toFile(`${directoryPath}/${name}`);
   }
 }

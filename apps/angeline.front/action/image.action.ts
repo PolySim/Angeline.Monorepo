@@ -126,3 +126,40 @@ export const reorderImages = async (categoryId: string, imageIds: string[]) => {
     console.error("Error reordering images", error);
   }
 };
+
+export const uploadImages = async ({
+  formData,
+  pageId,
+}: {
+  formData: FormData;
+  pageId: string;
+}) => {
+  try {
+    const { getToken } = await auth();
+    const token = await getToken();
+    if (!token) {
+      console.error("Unauthorized");
+      return { success: false };
+    }
+
+    const response = await fetch(`${config.API_URL}/image/${pageId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      console.error("Error uploading images", response);
+      return { success: false };
+    }
+
+    revalidateTag(`images-${pageId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error uploading images", error);
+    return { success: false };
+  }
+};

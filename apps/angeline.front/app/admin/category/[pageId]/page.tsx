@@ -3,17 +3,19 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import UpdateReportContainer from "./updateReportContainer";
+import AddImage from "./addImage";
 
 export default function CategoryPage() {
   return (
     <>
-      <div className="w-11/12 max-w-6xl mx-auto mb-4">
+      <div className="w-11/12 max-w-6xl mx-auto mb-4 flex gap-4">
         <Button className="w-fit" asChild>
           <Link href="/admin">
             <ArrowLeft className="size-4" />
             Retour
           </Link>
         </Button>
+        <AddImage />
       </div>
       <div className="flex flex-col flex-1 w-screen max-w-6xl mx-auto p-4 rounded-lg shadow-sm border border-gray-200">
         <Suspense

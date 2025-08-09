@@ -18,9 +18,12 @@ type FormInputProps = {
   disabled?: boolean;
   type?: string;
   onChange?: (value: string) => void;
+  onFilesChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
   placeholder?: string;
   required?: boolean;
+  multiple?: boolean;
+  accept?: string;
 };
 
 const FormInput = ({
@@ -28,11 +31,10 @@ const FormInput = ({
   label,
   description,
   disabled,
-  type,
   onChange,
+  onFilesChange,
   className,
-  placeholder,
-  required,
+  ...props
 }: FormInputProps) => {
   const { control } = useFormContext();
 
@@ -47,14 +49,16 @@ const FormInput = ({
             <Input
               disabled={disabled}
               {...field}
-              placeholder={placeholder}
-              type={type}
               onChange={(e) => {
-                field.onChange(e);
-                onChange?.(e.target.value);
+                if (onFilesChange) {
+                  onFilesChange(e);
+                } else {
+                  field.onChange(e);
+                  onChange?.(e.target.value);
+                }
               }}
               className={className}
-              required={required}
+              {...props}
             />
           </FormControl>
           {description && <FormDescription>{description}</FormDescription>}

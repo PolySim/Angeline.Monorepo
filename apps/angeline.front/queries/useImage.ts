@@ -3,6 +3,7 @@ import {
   getImagesByCategoryId,
   reorderImages,
   updateImageDescription,
+  uploadImages,
 } from "@/action/image.action";
 import { useAppParams } from "@/hook/useAppParams";
 import { Image } from "@repo/types/entities";
@@ -128,6 +129,28 @@ export const useReorderImages = (props?: { onErrorCallback?: () => void }) => {
         "Une erreur est survenue lors de la réorganisation des images"
       );
       props?.onErrorCallback?.();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["images", pageId] });
+    },
+  });
+};
+
+export const useUploadImages = () => {
+  const queryClient = useQueryClient();
+  const { pageId } = useAppParams();
+  return useMutation({
+    mutationFn: (formData: FormData) => uploadImages({ formData, pageId }),
+    onMutate: () => {
+      queryClient.cancelQueries({ queryKey: ["images", pageId] });
+    },
+    onSuccess: (result) => {
+      if (!result?.success) {
+        toast.error("Une erreur est survenue lors de l'upload des images");
+      }
+    },
+    onError: () => {
+      toast.error("Une erreur est survenue lors de l'upload des images");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["images", pageId] });
