@@ -12,7 +12,10 @@ const ImageElement = ({ image }: { image: ImageType }) => {
 
   return (
     <ImageContainer imageId={image.id}>
-      <div className="overflow-hidden relative">
+      <div
+        className="overflow-hidden relative"
+        onContextMenu={(e) => e.preventDefault()}
+      >
         {!isLoaded && (
           <>
             <Image
