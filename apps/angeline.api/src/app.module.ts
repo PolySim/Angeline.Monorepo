@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { config } from './config/config';
 import {
   CategoryController,
   ImageController,
@@ -20,7 +21,7 @@ import { CategoryService, ImageService, InformationService } from './services';
   imports: [
     TypeOrmModule.forRoot({
       type: 'sqlite',
-      database: 'src/db/database.db',
+      database: config.database_path,
       entities: [Information, Category, Image],
       synchronize: false,
       logging: true,

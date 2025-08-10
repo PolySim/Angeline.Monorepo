@@ -1,6 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs';
-import * as path from 'path';
 import { config } from 'src/config/config';
 import { DataSource } from 'typeorm';
 
@@ -20,30 +19,6 @@ export class DatabaseService implements OnModuleInit {
 
       if (!dbExists) {
         console.log('Initialisation de la base de données...');
-
-        // Lire le fichier SQL d'initialisation
-        const sqlPath = path.join(
-          __dirname,
-          '..',
-          '..',
-          'src',
-          'db',
-          'init_db.sql',
-        );
-        const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-
-        // Exécuter les requêtes SQL
-        const queries = sqlContent.split(';').filter((query) => query.trim());
-
-        for (const query of queries) {
-          if (query.trim()) {
-            await this.dataSource.query(query);
-          }
-        }
-
-        console.log('Base de données initialisée avec succès');
-      } else {
-        console.log('Base de données déjà existante');
       }
     } catch (error) {
       console.error(

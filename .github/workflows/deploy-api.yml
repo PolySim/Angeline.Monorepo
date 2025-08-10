@@ -31,4 +31,4 @@ jobs:
             docker pull ghcr.io/polysim/angeline.api:latest
             docker stop angeline.api || true
             docker rm angeline.api || true
-            docker run -d --name angeline.api -p 5066:5066 ghcr.io/polysim/angeline.api:latest
+            docker run -d --name angeline.api -p 5066:5066 -v /root/Angeline.Monorepo:/root/Angeline.Monorepo ghcr.io/polysim/angeline.api:latest \
