@@ -66,4 +66,4 @@ ENV PORT=5066
 WORKDIR /app/apps/angeline.api
 
 # Commande de démarrage
-CMD ["node", "dist/main"]
+CMD ["node", "/app/apps/angeline.api/dist/main"]
