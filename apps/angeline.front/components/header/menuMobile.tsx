@@ -29,7 +29,7 @@ const MenuMobile = () => {
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="overflow-y-scroll p-4">
+          <div className="overflow-y-scroll p-4 space-y-4">
             <div className="w-full">
               <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center w-full">
                 <FileText size={20} className="mr-2" />
