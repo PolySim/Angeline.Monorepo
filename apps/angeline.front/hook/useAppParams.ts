@@ -1,4 +1,4 @@
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 
 type UseAppParams = {
   pageId: string;
@@ -6,8 +6,10 @@ type UseAppParams = {
 
 export const useAppParams = (): UseAppParams => {
   const params = useParams();
+  const pathname = usePathname();
+  const pageId = pathname.split("/").pop();
 
   return {
-    pageId: (params.pageId ?? "") as string,
+    pageId: (params.pageId ?? pageId ?? "") as string,
   };
 };

@@ -36,7 +36,7 @@ const ImagesCarroussel = () => {
         <React.Fragment key={image.id}>
           {image.id === "article" ? (
             <div className="flex justify-center items-center max-h-screen w-screen my-12 snap-center min-w-screen">
-              <p className="w-10/12 h-fit max-h-full p-12 text-base text-gray-700 shadow-sm overflow-y-scroll rounded-lg leading-7 bg-white">
+              <p className="w-11/12 md:w-10/12 h-fit max-h-[95vh] p-12 text-base text-gray-700 shadow-sm overflow-y-scroll rounded-lg leading-7 bg-white">
                 {image.description}
               </p>
             </div>

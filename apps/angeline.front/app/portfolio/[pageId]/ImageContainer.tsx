@@ -24,9 +24,9 @@ const FixedCloseButton = ({ onClose }: { onClose: () => void }) => {
       }}
       size="icon"
       variant="ghost"
-      className="fixed top-4 right-4 z-[100000000] pointer-events-auto hover:bg-primary/30"
+      className="fixed top-4 left-4 w-10 h-10 z-[100000000] cursor-pointer bg-black/10 backdrop-blur-[10px] pointer-events-auto rounded-xl p-2 transition-all duration-300 ease-in-out border border-white/20 hover:bg-white/20 hover:scale-105"
     >
-      <XIcon />
+      <XIcon className="text-white" />
     </Button>,
     document.body
   );
