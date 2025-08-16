@@ -147,7 +147,7 @@ const ImageContainer = ({
           )}
         >
           {isOpen && <FixedCloseButton onClose={() => setIsOpen(false)} />}
-          {isOpened && <NavigateButton onNavigate={onNavigate} />}
+          {isOpened && isOpen && <NavigateButton onNavigate={onNavigate} />}
           <DialogHeader className="sr-only">
             <DialogTitle>{category?.name ?? "Images"}</DialogTitle>
           </DialogHeader>
