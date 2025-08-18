@@ -1,9 +1,13 @@
+import { config } from "@/config/config";
 import ContactImg from "@/public/contact.jpg";
 import Image from "next/image";
 import ContactForm from "./contactForm";
 
 export const metadata = {
   title: "Contact",
+  alternates: {
+    canonical: `${config.APP_URL}/contact`,
+  },
 };
 
 export default function AboutPage() {

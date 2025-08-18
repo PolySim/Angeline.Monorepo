@@ -32,9 +32,6 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="fr">
-        <head>
-          <link rel="canonical" />
-        </head>
         <ReactQueryProvider>
           <body className="antialiased min-h-screen flex flex-col">
             <Header />
