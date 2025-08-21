@@ -5,8 +5,32 @@ import ContactForm from "./contactForm";
 
 export const metadata = {
   title: "Contact",
+  description:
+    "Contactez Angeline Desdevises, photographe de guerre spécialisée dans les conflits du Moyen-Orient (Syrie, Liban). Disponible pour missions de photojournalisme international.",
   alternates: {
     canonical: `${config.APP_URL}/contact`,
+  },
+  openGraph: {
+    title: "Contact - Angeline Desdevises War Photography",
+    description:
+      "Contactez Angeline Desdevises, photographe de guerre spécialisée dans les conflits du Moyen-Orient (Syrie, Liban). Disponible pour missions de photojournalisme international.",
+    url: `${config.APP_URL}/contact`,
+    type: "website",
+    images: [
+      {
+        url: `${config.APP_URL}/contact.jpg`,
+        width: 1280,
+        height: 640,
+        alt: "Page contact Angeline Desdevises",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact - Angeline Desdevises War Photography",
+    description:
+      "Contactez Angeline Desdevises, photographe de guerre spécialisée dans les conflits du Moyen-Orient (Syrie, Liban). Disponible pour missions de photojournalisme international.",
+    images: [`${config.APP_URL}/contact.jpg`],
   },
 };
 
