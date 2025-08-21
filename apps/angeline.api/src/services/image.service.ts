@@ -1,5 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { File } from 'multer';
+import {
+  ChunkStatusDto,
+  ChunkUploadDto,
+  CompleteUploadDto,
+  InitiateUploadDto,
+} from 'src/types/chunk.dto';
 import { ImageRepository } from '../repositories/image.repository';
 import { Image, UpdateImageDto } from '../types';
 
@@ -47,5 +53,27 @@ export class ImageService {
     if (result.affected === 0) {
       throw new NotFoundException(`Image with ID ${id} not found`);
     }
+  }
+
+  initiateChunkUpload(initiateUploadDto: InitiateUploadDto) {
+    return this.imageRepository.initiateChunkUpload(initiateUploadDto);
+  }
+
+  uploadChunk(chunk: File, chunkUploadDto: ChunkUploadDto) {
+    return this.imageRepository.uploadChunk(chunk, chunkUploadDto);
+  }
+
+  getChunkStatus(fileHash: string): ChunkStatusDto {
+    return this.imageRepository.getChunkStatus(fileHash);
+  }
+
+  async completeChunkUpload(
+    completeUploadDto: CompleteUploadDto,
+  ): Promise<Image> {
+    return this.imageRepository.completeChunkUpload(completeUploadDto);
+  }
+
+  cancelChunkUpload(fileHash: string) {
+    return this.imageRepository.cancelChunkUpload(fileHash);
   }
 }

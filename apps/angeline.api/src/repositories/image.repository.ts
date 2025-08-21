@@ -1,20 +1,47 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { File } from 'multer';
 import * as fs from 'node:fs';
+import { join } from 'node:path';
 import * as sharp from 'sharp';
 import { config } from 'src/config/config';
+import {
+  ChunkStatusDto,
+  ChunkUploadDto,
+  CompleteUploadDto,
+  InitiateUploadDto,
+} from 'src/types/chunk.dto';
 import { DataSource, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Image } from '../entities/image.entity';
 import { UpdateImageDto } from '../types';
 
+interface ChunkUploadSession {
+  fileHash: string;
+  fileName: string;
+  category: string;
+  totalChunks: number;
+  fileSize: number;
+  uploadedChunks: Set<number>;
+  chunkPaths: Map<number | string, string>;
+  createdAt: Date;
+}
+
 @Injectable()
 export class ImageRepository extends Repository<Image> {
+  private uploadSessions: Map<string, ChunkUploadSession> = new Map();
+
   constructor(private dataSource: DataSource) {
     super(Image, dataSource.createEntityManager());
+    setInterval(() => this.cleanupExpiredSessions(), 60 * 60 * 1000);
   }
 
   async findByCategory(categoryId: string): Promise<Image[]> {
@@ -118,5 +145,223 @@ export class ImageRepository extends Repository<Image> {
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     await sharp(file.buffer).toFile(`${directoryPath}/${name}`);
+  }
+
+  initiateChunkUpload(initiateUploadDto: InitiateUploadDto) {
+    const {
+      fileHash,
+      fileName,
+      category,
+      fileSize,
+      chunkSize = 512 * 1024,
+    } = initiateUploadDto; // 512KB en prod, 1MB en dev
+
+    const totalChunks = Math.ceil(fileSize / chunkSize);
+
+    // Créer le répertoire temporaire pour les chunks
+    const tempDir = join(config.image_path, 'img', 'temp', fileHash);
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    const session: ChunkUploadSession = {
+      fileHash,
+      fileName,
+      category,
+      totalChunks,
+      fileSize,
+      uploadedChunks: new Set(),
+      chunkPaths: new Map(),
+      createdAt: new Date(),
+    };
+
+    this.uploadSessions.set(fileHash, session);
+
+    return {
+      fileHash,
+      totalChunks,
+      chunkSize,
+      uploadId: fileHash,
+    };
+  }
+
+  uploadChunk(chunk: File, chunkUploadDto: ChunkUploadDto) {
+    const { fileHash } = chunkUploadDto;
+
+    // Convertir les chaînes en nombres
+    const chunkIndex = parseInt(chunkUploadDto.chunkIndex.toString(), 10);
+    const totalChunks = parseInt(chunkUploadDto.totalChunks.toString(), 10);
+
+    const session = this.uploadSessions.get(fileHash);
+    if (!session) {
+      throw new BadRequestException("Session d'upload non trouvée");
+    }
+
+    if (isNaN(chunkIndex) || isNaN(totalChunks)) {
+      throw new BadRequestException('Index de chunk ou nombre total invalide');
+    }
+
+    if (chunkIndex >= totalChunks || chunkIndex < 0) {
+      throw new BadRequestException('Index de chunk invalide');
+    }
+
+    if (session.uploadedChunks.has(chunkIndex)) {
+      return { success: true, message: 'Chunk déjà uploadé' };
+    }
+
+    const tempDir = join(config.image_path, 'img', 'temp', fileHash);
+    const chunkPath = join(tempDir, `chunk_${chunkIndex}`);
+
+    // Sauvegarder le chunk
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    fs.writeFileSync(chunkPath, chunk.buffer);
+
+    session.uploadedChunks.add(chunkIndex);
+    session.chunkPaths.set(chunkIndex, chunkPath); // Utiliser l'index numérique comme clé
+
+    return {
+      success: true,
+      uploadedChunks: session.uploadedChunks.size,
+      totalChunks: session.totalChunks,
+      isComplete: session.uploadedChunks.size === session.totalChunks,
+    };
+  }
+
+  getChunkStatus(fileHash: string): ChunkStatusDto {
+    const session = this.uploadSessions.get(fileHash);
+    if (!session) {
+      throw new NotFoundException("Session d'upload non trouvée");
+    }
+
+    return {
+      fileHash,
+      uploadedChunks: Array.from(session.uploadedChunks),
+      totalChunks: session.totalChunks,
+      isComplete: session.uploadedChunks.size === session.totalChunks,
+    };
+  }
+
+  async completeChunkUpload(
+    completeUploadDto: CompleteUploadDto,
+  ): Promise<Image> {
+    const { fileHash, category } = completeUploadDto;
+
+    const session = this.uploadSessions.get(fileHash);
+    if (!session) {
+      throw new BadRequestException("Session d'upload non trouvée");
+    }
+
+    if (session.uploadedChunks.size !== session.totalChunks) {
+      throw new BadRequestException(
+        `Tous les chunks ne sont pas uploadés: ${session.uploadedChunks.size}/${session.totalChunks}`,
+      );
+    }
+
+    try {
+      // Assembler les chunks
+      const finalFileName = `${uuidv4()}.${session.fileName.split('.').pop()}`;
+      const finalPath = join(config.image_path, 'img', category, finalFileName);
+
+      // Créer le répertoire de destination si nécessaire
+      const hikeDir = join(config.image_path, 'img', category);
+      if (!fs.existsSync(hikeDir)) {
+        fs.mkdirSync(hikeDir, { recursive: true });
+      }
+
+      // Assembler les chunks dans l'ordre
+      const writeStream = fs.createWriteStream(finalPath);
+      for (let i = 0; i < session.totalChunks; i++) {
+        // Les clés peuvent être des chaînes, essayer les deux
+        const chunkPath =
+          session.chunkPaths.get(i) || session.chunkPaths.get(i.toString());
+
+        if (!chunkPath || !fs.existsSync(chunkPath)) {
+          throw new BadRequestException(`Chunk ${i} manquant`);
+        }
+        const chunkData = fs.readFileSync(chunkPath);
+        writeStream.write(chunkData);
+      }
+      writeStream.end();
+
+      // Attendre que l'écriture soit terminée
+      await new Promise((resolve, reject) => {
+        writeStream.on('finish', resolve as () => void);
+        writeStream.on('error', reject);
+      });
+
+      // Vérifier que le fichier final existe et sa taille
+      if (!fs.existsSync(finalPath)) {
+        throw new BadRequestException('Fichier final non créé');
+      }
+
+      try {
+        const processedBuffer = await sharp(finalPath).toBuffer();
+        await sharp(processedBuffer).toFile(finalPath);
+      } catch (sharpError) {
+        console.error('Erreur Sharp:', sharpError);
+        throw new BadRequestException("Erreur lors du traitement de l'image");
+      }
+
+      // Obtenir le nombre d'images existantes pour l'ordre
+      const numberMax = (await this.count({ where: { category } })) + 1;
+
+      // Créer l'entrée en base de données
+      const newImage = new Image();
+      newImage.id = uuidv4();
+      newImage.name = session.fileName ?? '';
+      newImage.category = category;
+      newImage.path = finalFileName;
+      newImage.ordered = numberMax;
+
+      const savedImage = await this.save(newImage);
+
+      // Nettoyer les fichiers temporaires
+      this.cleanupTempFiles(fileHash);
+      this.uploadSessions.delete(fileHash);
+
+      return savedImage;
+    } catch (error) {
+      // Nettoyer en cas d'erreur
+      console.error('ERREUR lors de la finalisation:', error);
+      console.error(
+        'Stack trace:',
+        error instanceof Error ? error.stack : 'N/A',
+      );
+      this.cleanupTempFiles(fileHash);
+      this.uploadSessions.delete(fileHash);
+      throw error;
+    }
+  }
+
+  cancelChunkUpload(fileHash: string) {
+    const session = this.uploadSessions.get(fileHash);
+    if (!session) {
+      // Session déjà supprimée, pas d'erreur
+      return { success: true, message: 'Upload déjà annulé' };
+    }
+
+    this.cleanupTempFiles(fileHash);
+    this.uploadSessions.delete(fileHash);
+
+    return { success: true, message: 'Upload annulé' };
+  }
+
+  private cleanupTempFiles(fileHash: string) {
+    const tempDir = join(config.image_path, 'img', 'temp', fileHash);
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  }
+
+  private cleanupExpiredSessions() {
+    const now = new Date();
+    const expireTime = 24 * 60 * 60 * 1000; // 24 heures
+
+    for (const [fileHash, session] of this.uploadSessions.entries()) {
+      if (now.getTime() - session.createdAt.getTime() > expireTime) {
+        this.cleanupTempFiles(fileHash);
+        this.uploadSessions.delete(fileHash);
+      }
+    }
   }
 }

@@ -7,14 +7,21 @@ import {
   Post,
   Put,
   Res,
+  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { File } from 'multer';
 import { AuthGuard } from 'src/middleware/AuthGuard';
+import {
+  ChunkStatusDto,
+  ChunkUploadDto,
+  CompleteUploadDto,
+  InitiateUploadDto,
+} from 'src/types/chunk.dto';
 import { ImageService } from '../services/image.service';
 import { UpdateImageDto } from '../types';
 
@@ -68,5 +75,39 @@ export class ImageController {
   async delete(@Param('id') id: string) {
     await this.imageService.delete(id);
     return { message: 'Image deleted successfully' };
+  }
+
+  @Post('chunk/initiate')
+  @UseGuards(AuthGuard)
+  initiateChunkUpload(@Body() initiateUploadDto: InitiateUploadDto) {
+    return this.imageService.initiateChunkUpload(initiateUploadDto);
+  }
+
+  @Post('chunk/upload')
+  @UseGuards(AuthGuard)
+  @UseInterceptors(FileInterceptor('chunk'))
+  uploadChunk(
+    @UploadedFile() chunk: File,
+    @Body() chunkUploadDto: ChunkUploadDto,
+  ) {
+    return this.imageService.uploadChunk(chunk, chunkUploadDto);
+  }
+
+  @Get('chunk/status/:fileHash')
+  @UseGuards(AuthGuard)
+  getChunkStatus(@Param('fileHash') fileHash: string): ChunkStatusDto {
+    return this.imageService.getChunkStatus(fileHash);
+  }
+
+  @Post('chunk/complete')
+  @UseGuards(AuthGuard)
+  async completeChunkUpload(@Body() completeUploadDto: CompleteUploadDto) {
+    return this.imageService.completeChunkUpload(completeUploadDto);
+  }
+
+  @Delete('chunk/cancel/:fileHash')
+  @UseGuards(AuthGuard)
+  cancelChunkUpload(@Param('fileHash') fileHash: string) {
+    return this.imageService.cancelChunkUpload(fileHash);
   }
 }

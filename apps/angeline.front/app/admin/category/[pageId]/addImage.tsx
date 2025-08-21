@@ -2,8 +2,7 @@
 
 import { FormInput } from "@/components/form/formInput";
 import { Form } from "@/components/ui/form";
-import { compressor } from "@/lib/compressor";
-import { useUploadImages } from "@/queries/useImage";
+import { useCreateImageByChunks } from "@/queries/useImage";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
@@ -23,25 +22,16 @@ const AddImage = () => {
     },
   });
   const [isPending, startTransition] = useTransition();
-  const { mutate: uploadImages } = useUploadImages();
+  const { mutate: uploadImagesByChunks } = useCreateImageByChunks();
 
   const onSubmit = async (data: FileList | null) => {
     if (!data) return;
     startTransition(async () => {
-      const compressedImages = await Promise.all(
-        Array.from(data).map(async (image) => {
-          return await compressor({
-            file: image,
-            maxSize: 2_000_000,
-            quality: 0.95,
-          });
+      await Promise.all(
+        Array.from(data).map((image) => {
+          uploadImagesByChunks(image);
         })
       );
-      const formData = new FormData();
-      compressedImages.forEach((compressedImage) => {
-        formData.append("images", compressedImage);
-      });
-      await uploadImages(formData);
     });
   };
 

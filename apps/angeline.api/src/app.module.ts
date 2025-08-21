@@ -24,7 +24,7 @@ import { CategoryService, ImageService, InformationService } from './services';
       database: config.database_path,
       entities: [Information, Category, Image],
       synchronize: false,
-      logging: true,
+      logging: false,
     }),
     TypeOrmModule.forFeature([Information, Category, Image]),
   ],
