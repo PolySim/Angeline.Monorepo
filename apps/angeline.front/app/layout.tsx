@@ -132,7 +132,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="fr">
         <ReactQueryProvider>
-          <body className="antialiased min-h-screen flex flex-col">
+          <body className="antialiased min-h-screen w-screen flex flex-col">
             <StructuredData type="person" />
             <StructuredData type="organization" />
             {children}

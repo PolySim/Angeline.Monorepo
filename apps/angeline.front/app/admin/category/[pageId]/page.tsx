@@ -9,7 +9,7 @@ import UpdateReportContainer from "./updateReportContainer";
 export default function CategoryPage() {
   return (
     <>
-      <div className="w-11/12 max-w-6xl mx-auto mb-4 flex gap-4">
+      <div className="w-11/12 max-w-6xl mx-auto mb-4 flex flex-wrap gap-4">
         <Button className="w-fit" asChild>
           <Link href="/admin">
             <ArrowLeft className="size-4" />
@@ -19,7 +19,7 @@ export default function CategoryPage() {
         <AddImage />
         <DownloadCategoryButton />
       </div>
-      <div className="flex flex-col flex-1 w-screen max-w-6xl mx-auto p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="flex flex-col flex-1 w-11/12 max-w-6xl mx-auto p-4 rounded-lg shadow-sm border border-gray-200">
         <Suspense
           fallback={
             <div className="flex items-center justify-center flex-1">
