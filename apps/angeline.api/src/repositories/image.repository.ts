@@ -315,12 +315,23 @@ export class ImageRepository extends Repository<Image> {
         throw new BadRequestException('Fichier final non créé');
       }
 
+      // Vérifier que la taille du fichier correspond à la taille attendue
+      const finalFileStats = fs.statSync(finalPath);
+      if (finalFileStats.size !== session.fileSize) {
+        console.error(
+          `Taille du fichier incorrecte: attendu ${session.fileSize}, obtenu ${finalFileStats.size}`,
+        );
+        throw new BadRequestException(
+          `Taille du fichier incorrecte: attendu ${session.fileSize}, obtenu ${finalFileStats.size}`,
+        );
+      }
+
       try {
-        const processedBuffer = await sharp(finalPath).toBuffer();
-        await sharp(processedBuffer).toFile(finalPath);
+        // Validation que le fichier est une image valide sans compression
+        await sharp(finalPath).metadata();
       } catch (sharpError) {
         console.error('Erreur Sharp:', sharpError);
-        throw new BadRequestException("Erreur lors du traitement de l'image");
+        throw new BadRequestException("Le fichier n'est pas une image valide");
       }
 
       // Obtenir le nombre d'images existantes pour l'ordre
