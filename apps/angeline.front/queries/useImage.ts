@@ -176,6 +176,12 @@ export const useCreateImageByChunks = () => {
     onSuccess: (data) => {
       if (data.success) {
         toast.success("Image uploadée avec succès");
+        if (data.data) {
+          queryClient.setQueryData(["images", pageId], (old: Image[]) => [
+            ...old,
+            data.data,
+          ]);
+        }
       } else {
         toast.error(data.error || "Erreur lors de l'upload de l'image");
       }
