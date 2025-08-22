@@ -49,10 +49,7 @@ export class ImageService {
   }
 
   async delete(id: string): Promise<void> {
-    const result = await this.imageRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Image with ID ${id} not found`);
-    }
+    await this.imageRepository.deleteImage(id);
   }
 
   initiateChunkUpload(initiateUploadDto: InitiateUploadDto) {
@@ -75,5 +72,13 @@ export class ImageService {
 
   cancelChunkUpload(fileHash: string) {
     return this.imageRepository.cancelChunkUpload(fileHash);
+  }
+
+  async downloadCategoryImages(categoryId: string): Promise<string> {
+    return this.imageRepository.createZipArchive(categoryId);
+  }
+
+  cleanupZipFile(zipFilePath: string): void {
+    this.imageRepository.cleanupZipFile(zipFilePath);
   }
 }

@@ -468,3 +468,42 @@ export const createImageByChunks = async ({
     return { success: false, error: "Erreur inattendue lors de l'upload" };
   }
 };
+
+export const downloadCategoryImages = async (categoryId: string) => {
+  try {
+    const { getToken } = await auth();
+    const token = await getToken();
+    if (!token) {
+      console.error("Unauthorized");
+      return { success: false, error: "Non autorisé" };
+    }
+
+    const response = await fetch(
+      `${config.API_URL}/image/download/category/${categoryId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Error downloading category images", response);
+      return { success: false, error: "Erreur lors du téléchargement" };
+    }
+
+    // Convertir la réponse en blob
+    const blob = await response.blob();
+
+    // Créer un URL pour le blob et déclencher le téléchargement
+
+    return { success: true, blob };
+  } catch (error) {
+    console.error("Error downloading category images", error);
+    return {
+      success: false,
+      error: "Erreur inattendue lors du téléchargement",
+    };
+  }
+};

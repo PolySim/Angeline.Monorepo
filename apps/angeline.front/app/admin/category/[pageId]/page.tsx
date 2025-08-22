@@ -2,8 +2,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
-import UpdateReportContainer from "./updateReportContainer";
 import AddImage from "./addImage";
+import DownloadCategoryButton from "./downloadCategoryButton";
+import UpdateReportContainer from "./updateReportContainer";
 
 export default function CategoryPage() {
   return (
@@ -16,6 +17,7 @@ export default function CategoryPage() {
           </Link>
         </Button>
         <AddImage />
+        <DownloadCategoryButton />
       </div>
       <div className="flex flex-col flex-1 w-screen max-w-6xl mx-auto p-4 rounded-lg shadow-sm border border-gray-200">
         <Suspense

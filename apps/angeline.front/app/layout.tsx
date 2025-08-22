@@ -1,6 +1,4 @@
 import { getBiography } from "@/action/information.action";
-import Footer from "@/components/footer/footer";
-import Header from "@/components/header/header";
 import StructuredData from "@/components/seo/StructuredData";
 import { Toaster } from "@/components/ui/sonner";
 import { config } from "@/config/config";
@@ -137,9 +135,7 @@ export default function RootLayout({
           <body className="antialiased min-h-screen flex flex-col">
             <StructuredData type="person" />
             <StructuredData type="organization" />
-            <Header />
             {children}
-            <Footer />
             <Toaster richColors closeButton />
             <WindowSizeInitializer />
           </body>

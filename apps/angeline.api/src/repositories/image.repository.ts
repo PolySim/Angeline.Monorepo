@@ -8,6 +8,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import * as archiver from 'archiver';
 import { File } from 'multer';
 import * as fs from 'node:fs';
 import { join } from 'node:path';
@@ -113,6 +114,26 @@ export class ImageRepository extends Repository<Image> {
         return saved;
       }),
     );
+  }
+
+  async deleteImage(id: string): Promise<void> {
+    const image = await this.findOne({ where: { id } });
+    if (!image) {
+      throw new NotFoundException(`Image with ID ${id} not found`);
+    }
+
+    const imagePath = join(
+      config.image_path,
+      'img',
+      image.category,
+      image.path,
+    );
+
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
+    }
+
+    await this.delete(id);
   }
 
   async updateImage(
@@ -362,6 +383,63 @@ export class ImageRepository extends Repository<Image> {
         this.cleanupTempFiles(fileHash);
         this.uploadSessions.delete(fileHash);
       }
+    }
+  }
+
+  async createZipArchive(categoryId: string): Promise<string> {
+    const images = await this.findByCategory(categoryId);
+
+    if (images.length === 0) {
+      throw new NotFoundException('Aucune image trouvée dans cette catégorie');
+    }
+
+    // Créer le répertoire temporaire pour le ZIP
+    const tempZipDir = join(config.image_path, 'temp_zip');
+    if (!fs.existsSync(tempZipDir)) {
+      fs.mkdirSync(tempZipDir, { recursive: true });
+    }
+
+    const zipFileName = `category_${categoryId}_${Date.now()}.zip`;
+    const zipFilePath = join(tempZipDir, zipFileName);
+
+    return new Promise((resolve, reject) => {
+      const output = fs.createWriteStream(zipFilePath);
+      const archive = archiver('zip', {
+        zlib: { level: 9 }, // Compression maximale
+      });
+
+      output.on('close', () => {
+        resolve(zipFilePath);
+      });
+
+      archive.on('error', (err) => {
+        reject(err);
+      });
+
+      archive.pipe(output);
+
+      // Ajouter chaque image au ZIP
+      images.forEach((image) => {
+        const imagePath = join(
+          config.image_path,
+          'img',
+          image.category,
+          image.path,
+        );
+        if (fs.existsSync(imagePath)) {
+          // Utiliser le nom original de l'image dans le ZIP
+          archive.file(imagePath, { name: image.name || image.path });
+        }
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      archive.finalize();
+    });
+  }
+
+  cleanupZipFile(zipFilePath: string): void {
+    if (fs.existsSync(zipFilePath)) {
+      fs.unlinkSync(zipFilePath);
     }
   }
 }

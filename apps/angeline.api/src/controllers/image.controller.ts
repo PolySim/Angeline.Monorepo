@@ -110,4 +110,37 @@ export class ImageController {
   cancelChunkUpload(@Param('fileHash') fileHash: string) {
     return this.imageService.cancelChunkUpload(fileHash);
   }
+
+  @Get('download/category/:categoryId')
+  @UseGuards(AuthGuard)
+  async downloadCategoryImages(
+    @Param('categoryId') categoryId: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const zipFilePath =
+        await this.imageService.downloadCategoryImages(categoryId);
+
+      // Définir les headers pour le téléchargement
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="category_${categoryId}.zip"`,
+      );
+
+      // Envoyer le fichier et nettoyer après
+      res.sendFile(zipFilePath, (err) => {
+        if (err) {
+          console.error('Erreur lors du téléchargement:', err);
+        }
+        // Nettoyer le fichier temporaire après l'envoi
+        this.imageService.cleanupZipFile(zipFilePath);
+      });
+    } catch (error) {
+      console.error('Erreur lors de la création du ZIP:', error);
+      res
+        .status(500)
+        .json({ error: "Erreur lors de la création de l'archive" });
+    }
+  }
 }
