@@ -6,9 +6,17 @@ import { useCategoriesActive } from "@/queries/useCategory";
 import { useMenuStore } from "@/store/menu.store";
 import { Camera, FileText, Info, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../ui/accordion";
 import BurgerMenuTrigger from "./burgerMenuTrigger";
 
 const MenuMobile = () => {
+  const [isReportagesOpen, setIsReportagesOpen] = useState(false);
   const isOpen = useMenuStore((state) => state.isOpen);
   const { data: categories, isPending } = useCategoriesActive();
   const { pageId } = useAppParams();
@@ -29,7 +37,7 @@ const MenuMobile = () => {
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="overflow-y-scroll p-4 space-y-4">
+          <div className="overflow-y-scroll p-4 space-y-4 w-full">
             <div className="w-full">
               <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center w-full">
                 <FileText size={20} className="mr-2" />
@@ -49,6 +57,7 @@ const MenuMobile = () => {
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
+                    setIsReportagesOpen(false);
                   }}
                 >
                   <Camera size={18} className="mr-3" />
@@ -67,6 +76,7 @@ const MenuMobile = () => {
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
+                    setIsReportagesOpen(false);
                   }}
                 >
                   <Camera size={18} className="mr-3" />
@@ -85,6 +95,7 @@ const MenuMobile = () => {
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
+                    setIsReportagesOpen(false);
                   }}
                 >
                   <Camera size={18} className="mr-3" />
@@ -100,6 +111,7 @@ const MenuMobile = () => {
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
+                    setIsReportagesOpen(false);
                   }}
                 >
                   <Mail size={18} className="mr-3" />
@@ -115,39 +127,56 @@ const MenuMobile = () => {
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
+                    setIsReportagesOpen(false);
                   }}
                 >
                   <Info size={18} className="mr-3" />A propos
                 </Link>
               </div>
             </div>
-            <div className="w-full">
-              <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
-                <Camera size={18} className="mr-2" />
-                Reportages
-              </h3>
-              <div>
-                {(categories || [])
-                  .filter((category) => category.ordered > 3)
-                  .map((category) => (
-                    <Link
-                      key={category.id}
-                      href={`/portfolio/${category.id}`}
-                      className={cn(
-                        "w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center hover:bg-gray-100",
-                        {
-                          "bg-primary/20 text-primary": pageId === category.id,
-                        }
-                      )}
-                      onClick={() => {
-                        useMenuStore.getState().toggleOpen();
-                      }}
-                    >
-                      {category.name}
-                    </Link>
-                  ))}
-              </div>
-            </div>
+            <Accordion
+              value={isReportagesOpen ? "item-1" : ""}
+              type="single"
+              collapsible
+              className="w-full"
+            >
+              <AccordionItem value="item-1" className="w-full">
+                <AccordionTrigger
+                  className="w-full flex items-center justify-between"
+                  onClick={() => setIsReportagesOpen((curr) => !curr)}
+                >
+                  <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                    <Camera size={18} className="mr-2" />
+                    Reportages
+                  </h3>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div>
+                    {(categories || [])
+                      .filter((category) => category.ordered > 3)
+                      .map((category) => (
+                        <Link
+                          key={category.id}
+                          href={`/portfolio/${category.id}`}
+                          className={cn(
+                            "w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center hover:bg-gray-100",
+                            {
+                              "bg-primary/20 text-primary":
+                                pageId === category.id,
+                            }
+                          )}
+                          onClick={() => {
+                            setIsReportagesOpen(false);
+                            useMenuStore.getState().toggleOpen();
+                          }}
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         )}
       </div>

@@ -13,6 +13,7 @@
     "@formkit/drag-and-drop": "^0.5.3",
     "@getbrevo/brevo": "^3.0.1",
     "@hookform/resolvers": "^5.2.1",
+    "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-hover-card": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",
