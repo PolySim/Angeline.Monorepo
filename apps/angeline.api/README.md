@@ -23,7 +23,22 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+API Angeline - Backend pour l'application de portfolio photographique avec support des fichiers RAW.
+
+### Fonctionnalités principales
+
+- Gestion des catégories d'images
+- Upload et traitement d'images standard (JPEG, PNG, WebP, etc.)
+- **Support des fichiers RAW** (.ARW, .CR2, .NEF, .ORF, .DNG, .RW2, .RAW)
+- Conversion automatique RAW vers JPEG
+- Upload par chunks pour les gros fichiers
+- Génération d'images floues pour le chargement progressif
+- Authentification avec Clerk
+- Base de données SQLite
+
+### Support des fichiers RAW
+
+L'API supporte automatiquement la conversion des fichiers RAW vers JPEG.
 
 ## Project setup
 

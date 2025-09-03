@@ -42,7 +42,7 @@ const AddImage = () => {
           name="images"
           type="file"
           multiple
-          accept="image/*"
+          accept="image/*,.arw,.raw,.cr2,.nef,.orf,.dng,.rw2"
           onFilesChange={(e) => onSubmit(e.target.files)}
           disabled={isPending}
         />

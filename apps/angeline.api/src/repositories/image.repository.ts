@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
@@ -20,6 +19,7 @@ import {
   CompleteUploadDto,
   InitiateUploadDto,
 } from 'src/types/chunk.dto';
+import { RawConverterUtil } from 'src/utils/raw-converter.util';
 import { DataSource, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Image } from '../entities/image.entity';
@@ -101,11 +101,19 @@ export class ImageRepository extends Repository<Image> {
     return await Promise.all(
       files.map(async (file, i) => {
         const newId = uuidv4();
-        const path = `${newId}.${(file.originalname ?? '').split('.').slice(-1)[0]}`;
+        const originalName = file.originalname ?? '';
+
+        // Générer le nom de fichier approprié (conversion RAW -> JPG si nécessaire)
+        const outputFileName = RawConverterUtil.generateOutputFileName(
+          originalName as string,
+        );
+        const fileExtension = outputFileName.split('.').slice(-1)[0];
+        const path = `${newId}.${fileExtension}`;
+
         const image = this.create({
           id: newId,
           category: categoryId,
-          name: file.originalname ?? '',
+          name: originalName, // Garder le nom original pour référence
           path,
           ordered: numberMax + i,
         });
@@ -164,8 +172,22 @@ export class ImageRepository extends Repository<Image> {
       fs.mkdirSync(directoryPath, { recursive: true });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    await sharp(file.buffer).toFile(`${directoryPath}/${name}`);
+    try {
+      // Traiter le fichier (conversion RAW si nécessaire)
+      const processedBuffer = await RawConverterUtil.processImageFile(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        file,
+        directoryPath,
+      );
+
+      // Utiliser Sharp pour le fichier traité
+      await sharp(processedBuffer).toFile(`${directoryPath}/${name}`);
+    } catch (error) {
+      console.error("Erreur lors du traitement de l'image:", error);
+      throw new BadRequestException(
+        `Erreur lors du traitement de l'image: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
+      );
+    }
   }
 
   initiateChunkUpload(initiateUploadDto: InitiateUploadDto) {
@@ -280,7 +302,11 @@ export class ImageRepository extends Repository<Image> {
 
     try {
       // Assembler les chunks
-      const finalFileName = `${uuidv4()}.${session.fileName.split('.').pop()}`;
+      const originalFileName = session.fileName;
+      const outputFileName =
+        RawConverterUtil.generateOutputFileName(originalFileName);
+      const fileExtension = outputFileName.split('.').pop();
+      const finalFileName = `${uuidv4()}.${fileExtension}`;
       const finalPath = join(config.image_path, 'img', category, finalFileName);
 
       // Créer le répertoire de destination si nécessaire
@@ -290,7 +316,19 @@ export class ImageRepository extends Repository<Image> {
       }
 
       // Assembler les chunks dans l'ordre
-      const writeStream = fs.createWriteStream(finalPath);
+      const tempAssembledPath = join(
+        config.image_path,
+        'temp',
+        `temp_${uuidv4()}_${originalFileName}`,
+      );
+
+      // Créer le répertoire temporaire si nécessaire
+      const tempDir = join(config.image_path, 'temp');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      const writeStream = fs.createWriteStream(tempAssembledPath);
       for (let i = 0; i < session.totalChunks; i++) {
         // Les clés peuvent être des chaînes, essayer les deux
         const chunkPath =
@@ -310,28 +348,45 @@ export class ImageRepository extends Repository<Image> {
         writeStream.on('error', reject);
       });
 
-      // Vérifier que le fichier final existe et sa taille
-      if (!fs.existsSync(finalPath)) {
-        throw new BadRequestException('Fichier final non créé');
+      // Vérifier que le fichier assemblé existe et sa taille
+      if (!fs.existsSync(tempAssembledPath)) {
+        throw new BadRequestException('Fichier assemblé non créé');
       }
 
       // Vérifier que la taille du fichier correspond à la taille attendue
-      const finalFileStats = fs.statSync(finalPath);
-      if (finalFileStats.size !== session.fileSize) {
+      const assembledFileStats = fs.statSync(tempAssembledPath);
+      if (assembledFileStats.size !== session.fileSize) {
         console.error(
-          `Taille du fichier incorrecte: attendu ${session.fileSize}, obtenu ${finalFileStats.size}`,
+          `Taille du fichier incorrecte: attendu ${session.fileSize}, obtenu ${assembledFileStats.size}`,
         );
         throw new BadRequestException(
-          `Taille du fichier incorrecte: attendu ${session.fileSize}, obtenu ${finalFileStats.size}`,
+          `Taille du fichier incorrecte: attendu ${session.fileSize}, obtenu ${assembledFileStats.size}`,
         );
       }
 
       try {
-        // Validation que le fichier est une image valide sans compression
-        await sharp(finalPath).metadata();
-      } catch (sharpError) {
-        console.error('Erreur Sharp:', sharpError);
-        throw new BadRequestException("Le fichier n'est pas une image valide");
+        // Traiter le fichier (conversion RAW si nécessaire)
+        if (RawConverterUtil.isRawFile(originalFileName)) {
+          // Convertir le fichier RAW
+          await RawConverterUtil.convertRawToJpeg(tempAssembledPath, finalPath);
+          // Nettoyer le fichier temporaire RAW
+          if (fs.existsSync(tempAssembledPath)) {
+            fs.unlinkSync(tempAssembledPath);
+          }
+        } else {
+          // Fichier image standard, validation avec Sharp et déplacement
+          await sharp(tempAssembledPath).metadata(); // Validation
+          fs.renameSync(tempAssembledPath, finalPath); // Déplacer vers destination finale
+        }
+      } catch (imageError) {
+        console.error("Erreur lors du traitement de l'image:", imageError);
+        // Nettoyer les fichiers temporaires
+        if (fs.existsSync(tempAssembledPath)) {
+          fs.unlinkSync(tempAssembledPath);
+        }
+        throw new BadRequestException(
+          `Erreur lors du traitement de l'image: ${imageError instanceof Error ? imageError.message : 'Erreur inconnue'}`,
+        );
       }
 
       // Obtenir le nombre d'images existantes pour l'ordre
