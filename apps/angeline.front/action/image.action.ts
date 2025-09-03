@@ -5,25 +5,6 @@ import { auth } from "@clerk/nextjs/server";
 import { Image } from "@repo/types/entities";
 import { revalidateTag } from "next/cache";
 
-const calculateFileHash = async (file: File) => {
-  const buffer = await file.arrayBuffer();
-  const uint8Array = new Uint8Array(buffer);
-
-  let hash = 0;
-  const sampleSize = Math.min(1024, uint8Array.length);
-
-  for (let i = 0; i < sampleSize; i++) {
-    hash = ((hash << 5) - hash + uint8Array[i]) & 0xffffffff;
-  }
-
-  const fileInfo = `${file.name}_${file.size}_${file.lastModified}`;
-  for (let i = 0; i < fileInfo.length; i++) {
-    hash = ((hash << 5) - hash + fileInfo.charCodeAt(i)) & 0xffffffff;
-  }
-
-  return Math.abs(hash).toString(16);
-};
-
 export const getImagesByCategoryId = async (categoryId: string) => {
   try {
     const response = await fetch(
@@ -390,82 +371,6 @@ export const cancelChunkUpload = async (fileHash: string) => {
   } catch (error) {
     console.error("Error in cancelling chunk upload", error);
     return { success: false };
-  }
-};
-
-export const createImageByChunks = async ({
-  pageId,
-  file,
-}: {
-  pageId: string;
-  file: File;
-}) => {
-  try {
-    const CHUNK_SIZE = 512 * 1024; // 512KB
-    const fileHash = await calculateFileHash(file);
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-
-    // Étape 1: Initier l'upload
-    const initiateResult = await initiateChunkUpload({
-      categoryId: pageId,
-      fileName: file.name,
-      fileSize: file.size,
-      fileHash,
-    });
-
-    if (!initiateResult.success) {
-      console.error("Échec initiation:", initiateResult);
-      return { success: false, error: "Échec de l'initiation de l'upload" };
-    }
-
-    // Étape 2: Uploader chaque chunk
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * CHUNK_SIZE;
-      const end = Math.min(start + CHUNK_SIZE, file.size);
-      const chunk = file.slice(start, end);
-
-      const uploadResult = await uploadChunk({
-        chunk,
-        chunkIndex: i,
-        totalChunks,
-        fileHash,
-        fileName: file.name,
-        categoryId: pageId,
-        fileSize: file.size,
-      });
-
-      if (!uploadResult.success) {
-        console.error(`Échec upload chunk ${i}:`, uploadResult);
-        await cancelChunkUpload(fileHash);
-        return { success: false, error: `Échec de l'upload du chunk ${i}` };
-      }
-    }
-
-    // Étape 3: Finaliser l'upload
-    const completeResult = await completeChunkUpload({
-      fileHash,
-      categoryId: pageId,
-    });
-
-    if (!completeResult.success) {
-      console.error("Échec finalisation");
-      return { success: false, error: "Échec de la finalisation de l'upload" };
-    }
-
-    return { success: true, data: completeResult.data };
-  } catch (error) {
-    console.error("Error in createImageByChunks - Exception non gérée:", error);
-    console.error("Stack trace:", error instanceof Error ? error.stack : "N/A");
-
-    // Essayer d'annuler si on a le fileHash
-    try {
-      const fileHash = await calculateFileHash(file);
-      await cancelChunkUpload(fileHash);
-    } catch (cancelError) {
-      console.error("Erreur lors de l'annulation:", cancelError);
-    }
-
-    return { success: false, error: "Erreur inattendue lors de l'upload" };
   }
 };
 
