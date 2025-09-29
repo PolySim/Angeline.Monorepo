@@ -1,4 +1,4 @@
-import { getCategoryById } from "@/action/category.action";
+import { getCategoriesActive, getCategoryById } from "@/action/category.action";
 import { config } from "@/config/config";
 import { Loader2 } from "lucide-react";
 import { Metadata } from "next";
@@ -9,6 +9,11 @@ type Props = {
   params: Promise<{ pageId: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
+
+export async function generateStaticParams() {
+  const pages = await getCategoriesActive();
+  return pages.map((page) => ({ pageId: page.id }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { pageId } = await params;

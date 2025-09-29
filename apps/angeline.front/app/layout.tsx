@@ -81,7 +81,7 @@ export const generateMetadata = async () => {
       card: "summary_large_image",
       site: "@angelinedesdevises", // À remplacer par le vrai handle Twitter s'il existe
       creator: "@angelinedesdevises",
-      title: "Angeline Desdevises - Photographe Conflits Moyen-Orient",
+      title: "Angeline Desdevises - Photographe",
       description,
       images: [`${config.APP_URL}/home.jpg`],
     },
