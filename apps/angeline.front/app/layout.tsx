@@ -19,6 +19,7 @@ export const generateMetadata = async () => {
         "Photographe documentaire spécialisée dans les conflits du Moyen-Orient, particulièrement en Syrie et au Liban. Photojournalisme et reportages d'actualité.";
 
   return {
+    metadataBase: new URL(config.APP_URL ?? "https://angelinedesdevises.fr"),
     title: {
       default: "Angeline Desdevises - Photographe Conflits Moyen-Orient",
       template: "%s | Angeline Desdevises",
