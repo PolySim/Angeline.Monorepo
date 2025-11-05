@@ -18,21 +18,6 @@ export default clerkMiddleware(async (auth, req) => {
   // Ajouter des headers de sécurité et de performance pour le SEO
   const response = NextResponse.next();
 
-  // SEO: Contrôler l'indexation selon l'environnement et la route
-  const hostname = req.nextUrl.hostname ?? "";
-  const isProdHost = hostname.endsWith("angelinedesdevises.fr");
-  const isBlockedPath = isPrivateRoute(req) || isSignInRoute(req);
-
-  if (isProdHost) {
-    response.headers.set(
-      "X-Robots-Tag",
-      isBlockedPath ? "noindex, nofollow, noarchive" : "index, follow"
-    );
-  } else {
-    // En preview/non‑prod, empêcher l'indexation
-    response.headers.set("X-Robots-Tag", "noindex, nofollow");
-  }
-
   // Headers de sécurité
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
