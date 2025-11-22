@@ -43,7 +43,7 @@ export default function AboutPage() {
           width={1280}
           height={640}
           alt="Landscape"
-          className="w-full h-auto"
+          className="w-full h-auto max-h-[400px] object-contain"
         />
       </div>
       <div className="w-9/12 flex flex-col items-center">

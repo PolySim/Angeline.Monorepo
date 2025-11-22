@@ -1,6 +1,7 @@
 "use client";
 
-import AboutImg from "@/public/about.jpeg";
+import { cn } from "@/lib/utils";
+import AboutImg from "@/public/portrait.jpg";
 import { useBiography } from "@/queries/useInformation";
 import { Lang } from "@repo/types/entities";
 import { Loader2 } from "lucide-react";
@@ -33,7 +34,14 @@ export default function AboutPage() {
               ?.find((info) => info.lang === Lang.FR)
               ?.content.split("\n")
               .map((line, index) => (
-                <p key={index}>{line}</p>
+                <p
+                  className={cn({
+                    "min-h-2": line === "",
+                  })}
+                  key={index}
+                >
+                  {line}
+                </p>
               ))}
           </div>
         )}
@@ -50,7 +58,14 @@ export default function AboutPage() {
               ?.find((info) => info.lang === Lang.EN)
               ?.content.split("\n")
               .map((line, index) => (
-                <p key={index}>{line}</p>
+                <p
+                  className={cn({
+                    "min-h-2": line === "",
+                  })}
+                  key={index}
+                >
+                  {line}
+                </p>
               ))}
           </div>
         )}
