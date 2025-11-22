@@ -1,7 +1,7 @@
 "use server";
 
 import { config } from "@/config/config";
-import brevo from "@getbrevo/brevo";
+import * as brevo from "@getbrevo/brevo";
 
 export const sendMail = async ({
   email,
