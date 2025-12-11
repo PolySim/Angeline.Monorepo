@@ -27,11 +27,16 @@ export default clerkMiddleware(async (auth, req) => {
   // Headers de performance
   response.headers.set("X-XSS-Protection", "1; mode=block");
 
+  // CORRECTION SEO: Supprimer toute balise noindex et forcer l'indexation
+  // Cela résout le problème d'indexation par Google
+  response.headers.set("X-Robots-Tag", "index, follow");
+  response.headers.delete("x-robot-tag"); // Supprimer les headers existants
+
   // Optimisations de cache pour les images (Next.js gère déjà beaucoup)
   if (req.nextUrl.pathname.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)$/)) {
     response.headers.set(
       "Cache-Control",
-      "public, max-age=31536000, immutable"
+      "public, max-age=31536000, immutable",
     );
   }
 
@@ -39,7 +44,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (req.nextUrl.pathname.startsWith("/_next/static/")) {
     response.headers.set(
       "Cache-Control",
-      "public, max-age=31536000, immutable"
+      "public, max-age=31536000, immutable",
     );
   }
 
