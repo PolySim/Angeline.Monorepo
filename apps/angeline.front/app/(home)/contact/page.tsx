@@ -49,10 +49,8 @@ export default function AboutPage() {
       <div className="w-9/12 flex flex-col items-center">
         <h2 className="mt-8 font-bold text-3xl">Contact</h2>
         <p className="w-11/12 md:w-8/12 text-sm font-light text-start md:text-center text-gray-700 mt-4">
-          Basée à Rennes, je suis disponible sur toute la France. I&apos;m
-          available for local projects as well as potential employment
-          opportunities. Use the form to inquire about rates and availability,
-          or just to say hi.
+          Actuellement basée dans les Hautes-Pyrénées, je suis mobile dans tout
+          le sud-ouest pour des commandes presses ou corporates.
         </p>
       </div>
       <div className="flex flex-col md:flex-row items-center md:items-start justify-center w-10/12 mt-5 mb-0 my-auto text-gray-700">
