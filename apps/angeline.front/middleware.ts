@@ -15,40 +15,7 @@ export default clerkMiddleware(async (auth, req) => {
     await auth.protect();
   }
 
-  // Ajouter des headers de sécurité et de performance pour le SEO
-  const response = NextResponse.next();
-
-  // Headers de sécurité
-  response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("Referrer-Policy", "origin-when-cross-origin");
-  response.headers.set("X-DNS-Prefetch-Control", "on");
-
-  // Headers de performance
-  response.headers.set("X-XSS-Protection", "1; mode=block");
-
-  // CORRECTION SEO: Supprimer toute balise noindex et forcer l'indexation
-  // Cela résout le problème d'indexation par Google
-  response.headers.set("X-Robots-Tag", "index, follow");
-  response.headers.delete("x-robot-tag"); // Supprimer les headers existants
-
-  // Optimisations de cache pour les images (Next.js gère déjà beaucoup)
-  if (req.nextUrl.pathname.match(/\.(jpg|jpeg|png|webp|avif|gif|svg)$/)) {
-    response.headers.set(
-      "Cache-Control",
-      "public, max-age=31536000, immutable",
-    );
-  }
-
-  // Headers pour les ressources statiques
-  if (req.nextUrl.pathname.startsWith("/_next/static/")) {
-    response.headers.set(
-      "Cache-Control",
-      "public, max-age=31536000, immutable",
-    );
-  }
-
-  return response;
+  return NextResponse.next();
 });
 
 export const config = {

@@ -1,12 +1,5 @@
-import { config } from "@/config/config";
 import HomeImg from "@/public/home.jpg";
 import Image from "next/image";
-
-export const metadata = {
-  alternates: {
-    canonical: config.APP_URL,
-  },
-};
 
 export default function Home() {
   return (

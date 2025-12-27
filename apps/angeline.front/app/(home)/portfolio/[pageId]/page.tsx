@@ -1,5 +1,4 @@
 import { getCategoriesActive, getCategoryById } from "@/action/category.action";
-import { config } from "@/config/config";
 import { Loader2 } from "lucide-react";
 import { Metadata } from "next";
 import { Suspense } from "react";
@@ -25,15 +24,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           information.name.length > 300
             ? information.name.slice(0, 300)
             : information.name,
-        alternates: {
-          canonical: `${config.APP_URL}/portfolio/${pageId}`,
-        },
       }
     : {
         title: information.name || "Report",
-        alternates: {
-          canonical: `${config.APP_URL}/portfolio/${pageId}`,
-        },
       };
 }
 
