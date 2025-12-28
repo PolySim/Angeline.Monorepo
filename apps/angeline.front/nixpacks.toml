@@ -1,0 +1,18 @@
+[phases.setup]
+nixPkgs = ['nodejs_20', 'pnpm']
+
+[phases.install]
+cmds = ['pnpm install --frozen-lockfile']
+
+[phases.build]
+cmds = ['pnpm run build']
+
+[start]
+cmd = 'pnpm start'
+```
+
+### Option 3 : Variables d'environnement Coolify
+
+Dans les paramètres de votre projet Coolify, ajoutez cette variable d'environnement de build :
+```
+NIXPACKS_INSTALL_CMD=pnpm install
