@@ -13,7 +13,8 @@ const nextConfig: NextConfig = {
         hostname: "127.0.0.1",
       },
     ],
-    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 86400 * 30,
+    formats: ["image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
@@ -25,8 +26,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "50mb",
     },
   },
-  // Optimisations SEO et performance
-  compress: true,
 };
 
 export default nextConfig;
