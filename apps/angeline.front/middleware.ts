@@ -3,8 +3,17 @@ import { NextResponse } from "next/server";
 
 const isPrivateRoute = createRouteMatcher(["/admin(.*)"]);
 const isSignInRoute = createRouteMatcher(["/signIn(.*)"]);
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/portfolio(.*)",
+  "/contact",
+  "/apropos",
+  "/sitemap.xml",
+  "/robots.txt",
+]);
 
 export default clerkMiddleware(async (auth, req) => {
+  if (isPublicRoute(req)) return NextResponse.next();
   const { userId } = await auth();
 
   if (isSignInRoute(req) && userId) {
