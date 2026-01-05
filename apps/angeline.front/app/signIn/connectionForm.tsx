@@ -37,7 +37,7 @@ const ConnectionForm = () => {
         type: "manual",
         message: "Login ou mot de passe incorrect",
       },
-      { shouldFocus: true }
+      { shouldFocus: true },
     );
   };
 
@@ -49,6 +49,7 @@ const ConnectionForm = () => {
           identifier: data.Login,
           password: data.Password,
         });
+        console.log(result);
 
         if (result.status === "complete" && setActive) {
           await setActive({ session: result.createdSessionId! });
