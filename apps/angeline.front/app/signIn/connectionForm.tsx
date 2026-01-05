@@ -49,7 +49,6 @@ const ConnectionForm = () => {
           identifier: data.Login,
           password: data.Password,
         });
-        console.log(result);
 
         if (result.status === "complete" && setActive) {
           await setActive({ session: result.createdSessionId! });
