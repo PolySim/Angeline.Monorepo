@@ -22,7 +22,7 @@ export default function AboutPage() {
         />
       </div>
       <div className="w-9/12 flex flex-col items-center">
-        <h2 className="mt-8 font-bold text-3xl">Contact</h2>
+        <h1 className="mt-8 font-bold text-3xl">Contact</h1>
         <p className="w-11/12 md:w-8/12 text-sm font-light text-start md:text-center text-gray-700 mt-4">
           Actuellement basée dans les Hautes-Pyrénées, je suis mobile dans tout
           le sud-ouest pour des commandes presses ou corporates.

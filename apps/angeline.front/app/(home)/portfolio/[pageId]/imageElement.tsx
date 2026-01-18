@@ -20,7 +20,11 @@ const ImageElement = ({ image }: { image: ImageType }) => {
           <>
             <Image
               src={`${config.IMAGE_URL}/image/${image.id}/blur`}
-              alt={`image_${image.id}`}
+              alt={
+                image.description ||
+                image.name ||
+                "Photographie reportage Angeline Desdevises"
+              }
               width={500}
               height={325}
               unoptimized
@@ -32,7 +36,11 @@ const ImageElement = ({ image }: { image: ImageType }) => {
         )}
         <Image
           src={`${config.IMAGE_URL}/image/${image.id}`}
-          alt={`image_${image.id}`}
+          alt={
+            image.description ||
+            image.name ||
+            "Photographie reportage Angeline Desdevises"
+          }
           width={500}
           height={325}
           onLoadingComplete={() => setIsLoaded(true)}
