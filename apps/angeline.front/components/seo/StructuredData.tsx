@@ -1,9 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Category, Image } from "@repo/types/entities";
 import { config } from "@/config/config";
+import { absoluteUrl, pageDescription, portfolioPath } from "@/lib/seo";
 
 interface StructuredDataProps {
   type: "person" | "portfolio" | "organization";
-  data?: any;
+  data?: Partial<Category> & {
+    images?: Image[];
+  };
 }
 
 export default function StructuredData({ type, data }: StructuredDataProps) {
@@ -15,7 +18,7 @@ export default function StructuredData({ type, data }: StructuredDataProps) {
     description:
       "Photographe documentaire spécialisée dans les conflits du Moyen-Orient, particulièrement en Syrie et au Liban. Photojournaliste basée à Rennes.",
     url: config.APP_URL,
-    image: `${config.APP_URL}/about.jpeg`,
+    image: absoluteUrl("/portrait.jpg"),
     sameAs: [
       "https://www.instagram.com/angeline_desdevises/",
       "https://www.linkedin.com/in/ang%C3%A9line-desdevises-942436199/?originalSubdomain=fr",
@@ -63,25 +66,58 @@ export default function StructuredData({ type, data }: StructuredDataProps) {
     },
   });
 
-  const getPortfolioSchema = () => ({
-    "@context": "https://schema.org",
-    "@type": "CreativeWork",
-    name: data?.name || "Portfolio Photographique",
-    description: data?.description || "Série photographique documentaire",
-    creator: {
-      "@type": "Person",
-      name: "Angeline Desdevises",
-    },
-    url: `${config.APP_URL}/portfolio/${data?.id}`,
-    image:
-      data?.images?.map((img: any) => ({
-        "@type": "ImageObject",
-        url: `${config.IMAGE_URL}/${img.url}`,
-        description: img.alt || "Photographie documentaire",
-      })) || [],
-    genre: "Photographie documentaire",
-    inLanguage: "fr",
-  });
+  const getPortfolioSchema = () => {
+    const url = absoluteUrl(portfolioPath(data?.id ? data : undefined));
+
+    return [
+      {
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        name: data?.name || "Portfolio Photographique",
+        description: pageDescription(
+          data?.article,
+          "Série photographique documentaire par Angeline Desdevises",
+        ),
+        creator: {
+          "@type": "Person",
+          name: "Angeline Desdevises",
+          url: config.APP_URL,
+        },
+        mainEntityOfPage: url,
+        url,
+        image:
+          data?.images?.map((img) => ({
+            "@type": "ImageObject",
+            url: `${config.IMAGE_URL}/image/${img.id}`,
+            name: img.name,
+            caption: img.description || img.name,
+            description:
+              img.description ||
+              "Photographie documentaire Angeline Desdevises",
+          })) || [],
+        genre: "Photographie documentaire",
+        inLanguage: "fr",
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Accueil",
+            item: config.APP_URL,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: data?.name || "Portfolio",
+            item: url,
+          },
+        ],
+      },
+    ];
+  };
 
   const getOrganizationSchema = () => ({
     "@context": "https://schema.org",
@@ -149,7 +185,7 @@ export default function StructuredData({ type, data }: StructuredDataProps) {
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify(getSchema()),
+        __html: JSON.stringify(getSchema()).replace(/</g, "\\u003c"),
       }}
     />
   );

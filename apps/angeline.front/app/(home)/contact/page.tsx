@@ -1,12 +1,31 @@
-import ContactImg from "@/public/contact.jpg";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import Image from "next/image";
+import { absoluteUrl } from "@/lib/seo";
+import ContactImg from "@/public/contact.jpg";
 import ContactForm from "./contactForm";
 
 export const metadata: Metadata = {
   title: "Contact",
   description:
     "Contactez Angeline Desdevises, photographe de guerre spécialisée dans les conflits du Moyen-Orient (Syrie, Liban). Disponible pour missions de photojournalisme international.",
+  alternates: {
+    canonical: absoluteUrl("/contact"),
+  },
+  openGraph: {
+    title: "Contact | Angeline Desdevises",
+    description:
+      "Contactez Angeline Desdevises pour des commandes presse, corporate ou des missions de photojournalisme.",
+    url: absoluteUrl("/contact"),
+    type: "website",
+    images: [
+      {
+        url: absoluteUrl("/contact.jpg"),
+        width: 1280,
+        height: 640,
+        alt: "Contact Angeline Desdevises",
+      },
+    ],
+  },
 };
 
 export default function AboutPage() {
@@ -17,7 +36,7 @@ export default function AboutPage() {
           src={ContactImg}
           width={1280}
           height={640}
-          alt="Landscape"
+          alt="Paysage photographié par Angeline Desdevises"
           className="w-full h-auto max-h-[400px] object-contain"
         />
       </div>

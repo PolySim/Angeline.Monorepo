@@ -1,23 +1,20 @@
+import { ClerkProvider } from "@clerk/nextjs";
+import { Lang } from "@repo/types/entities";
+import type { Metadata } from "next";
 import { getBiography } from "@/action/information.action";
 import StructuredData from "@/components/seo/StructuredData";
+import UmamiAnalytics from "@/components/seo/UmamiAnalytics";
 import { Toaster } from "@/components/ui/sonner";
 import { config } from "@/config/config";
 import { ReactQueryProvider } from "@/lib/react-query";
+import { absoluteUrl, pageDescription } from "@/lib/seo";
 import WindowSizeInitializer from "@/lib/WindowSizeInitializer";
-import { ClerkProvider } from "@clerk/nextjs";
-import { Lang } from "@repo/types/entities";
-import { Metadata } from "next";
 import "./globals.css";
 
 export const generateMetadata = async (): Promise<Metadata> => {
   const biography = await getBiography();
   const biographyFr = biography?.find((info) => info.lang === Lang.FR);
-
-  const description =
-    biographyFr?.content && biographyFr.content.length > 160
-      ? biographyFr.content.slice(0, 160) + "..."
-      : biographyFr?.content ||
-        "Photographe documentaire spécialisée dans les conflits du Moyen-Orient, particulièrement en Syrie et au Liban. Photojournalisme et reportages d'actualité.";
+  const description = pageDescription(biographyFr?.content);
 
   return {
     metadataBase: new URL(config.APP_URL),
@@ -63,7 +60,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
       type: "website",
       images: [
         {
-          url: "/home.jpg",
+          url: absoluteUrl("/home.jpg"),
           width: 1920,
           height: 1080,
           alt: "Angeline Desdevises Portfolio",
@@ -74,7 +71,7 @@ export const generateMetadata = async (): Promise<Metadata> => {
       card: "summary_large_image",
       title: "Angeline Desdevises - Photographe Conflits Moyen-Orient",
       description,
-      images: ["/home.jpg"],
+      images: [absoluteUrl("/home.jpg")],
     },
     robots: {
       index: true,
@@ -108,6 +105,7 @@ export default function RootLayout({
             {children}
             <Toaster richColors closeButton />
             <WindowSizeInitializer />
+            <UmamiAnalytics />
           </body>
         </ReactQueryProvider>
       </html>

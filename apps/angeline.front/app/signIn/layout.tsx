@@ -2,8 +2,16 @@ import type { Metadata } from "next";
 import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: "Connection | Angeline",
+  title: "Connexion | Angeline",
   description: "",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 };
 
 export default function SignInLayout({

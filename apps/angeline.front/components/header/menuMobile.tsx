@@ -1,12 +1,13 @@
 "use client";
 
-import { useAppParams } from "@/hook/useAppParams";
-import { cn } from "@/lib/utils";
-import { useCategoriesActive } from "@/queries/useCategory";
-import { useMenuStore } from "@/store/menu.store";
 import { Camera, FileText, Info, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useAppParams } from "@/hook/useAppParams";
+import { getPortfolioIdFromParam, portfolioPath } from "@/lib/seo";
+import { cn } from "@/lib/utils";
+import { useCategoriesActive } from "@/queries/useCategory";
+import { useMenuStore } from "@/store/menu.store";
 import {
   Accordion,
   AccordionContent,
@@ -20,6 +21,7 @@ const MenuMobile = () => {
   const isOpen = useMenuStore((state) => state.isOpen);
   const { data: categories, isPending } = useCategoriesActive();
   const { pageId } = useAppParams();
+  const activePortfolioId = getPortfolioIdFromParam(pageId);
 
   return (
     <>
@@ -29,7 +31,7 @@ const MenuMobile = () => {
           "flex flex-col justify-center items-start gap-4 fixed top-0 left-0 right-0 bottom-0 overflow-x-hidden transition-transform duration-300 bg-white font-bold font-helvetica text-md text-center z-20",
           {
             "-translate-x-full": !isOpen,
-          }
+          },
         )}
       >
         {isPending ? (
@@ -45,15 +47,17 @@ const MenuMobile = () => {
               </h3>
               <div>
                 <Link
-                  href={`/portfolio/${categories?.find((category) => category.ordered === 3)?.id}`}
+                  href={portfolioPath(
+                    categories?.find((category) => category.ordered === 3),
+                  )}
                   className={cn(
                     "w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center hover:bg-gray-100",
                     {
                       "bg-primary/20 text-primary":
-                        pageId ===
+                        activePortfolioId ===
                         categories?.find((category) => category.ordered === 3)
                           ?.id,
-                    }
+                    },
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
@@ -64,15 +68,17 @@ const MenuMobile = () => {
                   Portfolio
                 </Link>
                 <Link
-                  href={`/portfolio/${categories?.find((category) => category.ordered === 1)?.id}`}
+                  href={portfolioPath(
+                    categories?.find((category) => category.ordered === 1),
+                  )}
                   className={cn(
                     "w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center hover:bg-gray-100",
                     {
                       "bg-primary/20 text-primary":
-                        pageId ===
+                        activePortfolioId ===
                         categories?.find((category) => category.ordered === 1)
                           ?.id,
-                    }
+                    },
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
@@ -83,15 +89,17 @@ const MenuMobile = () => {
                   Portraits
                 </Link>
                 <Link
-                  href={`/portfolio/${categories?.find((category) => category.ordered === 2)?.id}`}
+                  href={portfolioPath(
+                    categories?.find((category) => category.ordered === 2),
+                  )}
                   className={cn(
                     "w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center hover:bg-gray-100",
                     {
                       "bg-primary/20 text-primary":
-                        pageId ===
+                        activePortfolioId ===
                         categories?.find((category) => category.ordered === 2)
                           ?.id,
-                    }
+                    },
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
@@ -107,7 +115,7 @@ const MenuMobile = () => {
                     "w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center hover:bg-gray-100",
                     {
                       "bg-primary/20 text-primary": pageId === "contact",
-                    }
+                    },
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
@@ -123,7 +131,7 @@ const MenuMobile = () => {
                     "w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center hover:bg-gray-100",
                     {
                       "bg-primary/20 text-primary": pageId === "apropos",
-                    }
+                    },
                   )}
                   onClick={() => {
                     useMenuStore.getState().toggleOpen();
@@ -157,13 +165,13 @@ const MenuMobile = () => {
                       .map((category) => (
                         <Link
                           key={category.id}
-                          href={`/portfolio/${category.id}`}
+                          href={portfolioPath(category)}
                           className={cn(
                             "w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center hover:bg-gray-100",
                             {
                               "bg-primary/20 text-primary":
-                                pageId === category.id,
-                            }
+                                activePortfolioId === category.id,
+                            },
                           )}
                           onClick={() => {
                             setIsReportagesOpen(false);

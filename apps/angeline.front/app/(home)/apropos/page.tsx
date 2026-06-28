@@ -1,16 +1,28 @@
-"use client";
-
+import { Lang } from "@repo/types/entities";
+import Image from "next/image";
+import { getBiography } from "@/action/information.action";
 import { cn } from "@/lib/utils";
 import AboutImg from "@/public/portrait.jpg";
-import { useBiography } from "@/queries/useInformation";
-import { Lang } from "@repo/types/entities";
-import { Loader2 } from "lucide-react";
-import Image from "next/image";
 
-export default function AboutPage() {
-  const { data: biography, isPending } = useBiography();
+const renderParagraphs = (content?: string) =>
+  content?.split("\n").map((line, index) => (
+    <p
+      className={cn({
+        "min-h-2": line === "",
+      })}
+      key={`${index}-${line}`}
+    >
+      {line}
+    </p>
+  ));
+
+export default async function AboutPage() {
+  const biography = await getBiography();
+  const biographyFr = biography?.find((info) => info.lang === Lang.FR);
+  const biographyEn = biography?.find((info) => info.lang === Lang.EN);
+
   return (
-    <div className="relative grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-16 w-full max-w-7xl mx-auto p-8 md:p-10">
+    <main className="relative grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-16 w-full max-w-7xl mx-auto p-8 md:p-10">
       <div className="md:sticky top-6 w-full h-max">
         <Image
           src={AboutImg}
@@ -24,52 +36,16 @@ export default function AboutPage() {
         <h1 className="text-gray-900 text-4xl md:text-6xl font-bold">
           Biographie (fr)
         </h1>
-        {isPending ? (
-          <div className="flex justify-center items-center h-full w-full min-w-32 min-h-10">
-            <Loader2 className="animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="text-xs font-medium text-gray-600 mt-3 md:mt-5 leading-5">
-            {biography
-              ?.find((info) => info.lang === Lang.FR)
-              ?.content.split("\n")
-              .map((line, index) => (
-                <p
-                  className={cn({
-                    "min-h-2": line === "",
-                  })}
-                  key={index}
-                >
-                  {line}
-                </p>
-              ))}
-          </div>
-        )}
-        <h4 className="mt-6 text-lg md:text-2xl font-semibold">
+        <div className="text-xs font-medium text-gray-600 mt-3 md:mt-5 leading-5">
+          {renderParagraphs(biographyFr?.content)}
+        </div>
+        <h2 className="mt-6 text-lg md:text-2xl font-semibold">
           Biography (en)
-        </h4>
-        {isPending ? (
-          <div className="flex justify-center items-center h-full w-full min-w-32 min-h-10">
-            <Loader2 className="animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="text-xs font-medium text-gray-600 mt-3 leading-5">
-            {biography
-              ?.find((info) => info.lang === Lang.EN)
-              ?.content.split("\n")
-              .map((line, index) => (
-                <p
-                  className={cn({
-                    "min-h-2": line === "",
-                  })}
-                  key={index}
-                >
-                  {line}
-                </p>
-              ))}
-          </div>
-        )}
+        </h2>
+        <div className="text-xs font-medium text-gray-600 mt-3 leading-5">
+          {renderParagraphs(biographyEn?.content)}
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

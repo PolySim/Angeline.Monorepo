@@ -1,8 +1,9 @@
 "use client";
 
-import { useCategoriesActive } from "@/queries/useCategory";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { portfolioPath } from "@/lib/seo";
+import { useCategoriesActive } from "@/queries/useCategory";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -16,7 +17,7 @@ const MenuDesktop = () => {
   const { data: categories, isPending } = useCategoriesActive();
 
   const categoriesFiltered = categories?.filter(
-    (category) => ![1, 2, 3].includes(category.ordered)
+    (category) => ![1, 2, 3].includes(category.ordered),
   );
 
   return (
@@ -25,7 +26,9 @@ const MenuDesktop = () => {
         <NavigationMenuItem>
           <NavigationMenuLink asChild>
             <Link
-              href={`/portfolio/${categories?.find((category) => category.ordered === 3)?.id}`}
+              href={portfolioPath(
+                categories?.find((category) => category.ordered === 3),
+              )}
               className="hover:text-primary transition"
             >
               PORTFOLIO
@@ -46,7 +49,7 @@ const MenuDesktop = () => {
                     <li className="row-span-3" key={category.id}>
                       <NavigationMenuLink asChild>
                         <Link
-                          href={`/portfolio/${category.id}`}
+                          href={portfolioPath(category)}
                           className="hover:bg-primary/20 transition rounded-md px-2 py-1 font-semibold"
                         >
                           {category.name}
@@ -62,7 +65,9 @@ const MenuDesktop = () => {
         <NavigationMenuItem>
           <NavigationMenuLink asChild>
             <Link
-              href={`/portfolio/${categories?.find((category) => category.ordered === 1)?.id}`}
+              href={portfolioPath(
+                categories?.find((category) => category.ordered === 1),
+              )}
               className="hover:text-primary transition"
             >
               PORTRAITS
@@ -72,7 +77,9 @@ const MenuDesktop = () => {
         <NavigationMenuItem>
           <NavigationMenuLink asChild>
             <Link
-              href={`/portfolio/${categories?.find((category) => category.ordered === 2)?.id}`}
+              href={portfolioPath(
+                categories?.find((category) => category.ordered === 2),
+              )}
               className="hover:text-primary transition"
             >
               PUBLICATIONS

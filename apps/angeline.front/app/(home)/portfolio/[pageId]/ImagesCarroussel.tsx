@@ -1,17 +1,18 @@
 "use client";
 
-import { config } from "@/config/config";
-import { useCategoryById } from "@/queries/useCategory";
-import { useImages } from "@/queries/useImage";
-import { Image as ImageType } from "@repo/types/entities";
+import type { Category, Image as ImageType } from "@repo/types/entities";
 import Image from "next/image";
 import React from "react";
+import { config } from "@/config/config";
 
-const ImagesCarroussel = () => {
-  const { data: images } = useImages();
-  const { data: category } = useCategoryById();
-
-  const imagesRefactor = (images ?? []).reduce(
+const ImagesCarroussel = ({
+  category,
+  images,
+}: {
+  category: Category;
+  images: ImageType[];
+}) => {
+  const imagesRefactor = images.reduce(
     (acc: ImageType[], curr, currentIndex) =>
       currentIndex === 0 && category?.article
         ? [
@@ -27,7 +28,7 @@ const ImagesCarroussel = () => {
             },
           ]
         : [...acc, curr],
-    [] as ImageType[]
+    [] as ImageType[],
   );
 
   return (
@@ -45,7 +46,11 @@ const ImagesCarroussel = () => {
               <Image
                 className="object-contain h-full w-full"
                 src={`${config.IMAGE_URL}/image/${image.id}`}
-                alt={`image-${image.name}`}
+                alt={
+                  image.description ||
+                  image.name ||
+                  "Photographie documentaire d'Angeline Desdevises"
+                }
                 width={1920}
                 height={1080}
               />

@@ -1,5 +1,9 @@
 "use client";
 
+import type { Category, Image } from "@repo/types/entities";
+import { ChevronLeft, ChevronRight, XIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,11 +13,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useCategoryById } from "@/queries/useCategory";
-import { useImages } from "@/queries/useImage";
-import { ChevronLeft, ChevronRight, XIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import ImagesCarroussel from "./ImagesCarroussel";
 
 const FixedCloseButton = ({ onClose }: { onClose: () => void }) => {
@@ -28,7 +27,7 @@ const FixedCloseButton = ({ onClose }: { onClose: () => void }) => {
     >
       <XIcon className="text-white" />
     </Button>,
-    document.body
+    document.body,
   );
 };
 
@@ -56,31 +55,34 @@ const NavigateButton = ({
         <ChevronRight className="text-white size-10" />
       </Button>
     </>,
-    document.body
+    document.body,
   );
 };
 
 const ImageContainer = ({
   children,
+  category,
   imageId,
+  images,
 }: {
   children: React.ReactNode;
+  category: Category;
   imageId: string;
+  images: Image[];
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isOpened, setIsOpened] = useState(false);
-  const { data: images } = useImages();
-  const { data: category } = useCategoryById();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const onOpen = () => {
-    const index = images?.findIndex((image) => image.id === imageId) ?? 0;
+    const index = images.findIndex((image) => image.id === imageId);
+    const safeIndex = Math.max(index, 0);
     const imageIndex =
       imageId === "article"
         ? 1
-        : index === 0 || !category?.article
-          ? index
-          : index + 1;
+        : safeIndex === 0 || !category?.article
+          ? safeIndex
+          : safeIndex + 1;
 
     const element = containerRef.current;
     if (element) {
@@ -114,8 +116,7 @@ const ImageContainer = ({
   });
 
   return (
-    <>
-      <Dialog
+    <Dialog
         open={isOpen}
         onOpenChange={(newOpen) => {
           setIsOpen(newOpen);
@@ -143,7 +144,7 @@ const ImageContainer = ({
             "p-0 m-0 rounded-none overflow-x-auto snap-x snap-mandatory disable_scrollbar flex bg-transparent",
             {
               "scroll-smooth": isOpened,
-            }
+            },
           )}
         >
           {isOpen && <FixedCloseButton onClose={() => setIsOpen(false)} />}
@@ -151,10 +152,9 @@ const ImageContainer = ({
           <DialogHeader className="sr-only">
             <DialogTitle>{category?.name ?? "Images"}</DialogTitle>
           </DialogHeader>
-          <ImagesCarroussel />
+          <ImagesCarroussel category={category} images={images} />
         </DialogContent>
       </Dialog>
-    </>
   );
 };
 

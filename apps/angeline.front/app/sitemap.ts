@@ -1,30 +1,28 @@
+import type { MetadataRoute } from "next";
 import { getCategoriesActive } from "@/action/category.action";
 import { config } from "@/config/config";
-import { MetadataRoute } from "next";
+import { portfolioPath } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages = await getCategoriesActive();
   return [
     {
       url: `${config.APP_URL}/`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
+      changeFrequency: "weekly",
       priority: 1,
     },
     ...pages.map((page) => ({
-      url: `${config.APP_URL}/portfolio/${page.id}`,
-      lastModified: new Date(),
+      url: `${config.APP_URL}${portfolioPath(page)}`,
+      changeFrequency: "monthly" as const,
       priority: 0.8,
     })),
     {
       url: `${config.APP_URL}/apropos`,
-      lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
       url: `${config.APP_URL}/contact`,
-      lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.5,
     },

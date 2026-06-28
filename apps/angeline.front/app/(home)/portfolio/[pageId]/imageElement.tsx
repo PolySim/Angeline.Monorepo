@@ -1,17 +1,25 @@
 "use client";
 
-import { config } from "@/config/config";
-import { cn } from "@/lib/utils";
-import { Image as ImageType } from "@repo/types/entities";
+import type { Category, Image as ImageType } from "@repo/types/entities";
 import Image from "next/image";
 import { useState } from "react";
+import { config } from "@/config/config";
+import { cn } from "@/lib/utils";
 import ImageContainer from "./ImageContainer";
 
-const ImageElement = ({ image }: { image: ImageType }) => {
+const ImageElement = ({
+  category,
+  image,
+  images,
+}: {
+  category: Category;
+  image: ImageType;
+  images: ImageType[];
+}) => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   return (
-    <ImageContainer imageId={image.id}>
+    <ImageContainer category={category} imageId={image.id} images={images}>
       <div
         className="overflow-hidden relative"
         onContextMenu={(e) => e.preventDefault()}

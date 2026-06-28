@@ -2,6 +2,20 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Analytics
+
+Umami is loaded globally when `NEXT_PUBLIC_UMAMI_WEBSITE_ID` is defined.
+
+```bash
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=your-website-id
+NEXT_PUBLIC_UMAMI_SCRIPT_URL=https://cloud.umami.is/script.js
+```
+
+`NEXT_PUBLIC_UMAMI_SCRIPT_URL` is optional and can point to a self-hosted or
+proxied Umami script.
+
+## Local development
+
 First, run the development server:
 
 ```bash

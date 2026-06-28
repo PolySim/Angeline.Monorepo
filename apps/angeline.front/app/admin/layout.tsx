@@ -1,21 +1,22 @@
-"use client";
+import type { Metadata } from "next";
+import AdminShell from "./adminShell";
 
-import { Button } from "@/components/ui/button";
-import { SignOutButton } from "@clerk/nextjs";
+export const metadata: Metadata = {
+  title: "Administration",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
+};
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="py-4">
-      <div className="flex justify-end w-11/12 max-w-6xl mx-auto pb-2">
-        <Button asChild className="w-fit">
-          <SignOutButton>Déconnexion</SignOutButton>
-        </Button>
-      </div>
-      {children}
-    </div>
-  );
+  return <AdminShell>{children}</AdminShell>;
 }
