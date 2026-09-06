@@ -7,7 +7,7 @@ import Link from "next/link";
 import HomepageForm from "./homepageForm";
 
 export default function HomepageAdmin() {
-  const { data: settings, isPending } = useHomepageSettings();
+  const { data: settings, isPending, isError, refetch } = useHomepageSettings();
 
   return (
     <>
@@ -19,7 +19,7 @@ export default function HomepageAdmin() {
           </Link>
         </Button>
       </div>
-      <div className="flex flex-col flex-1 w-11/12 max-w-6xl mx-auto p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="flex flex-col flex-1 w-11/12 max-w-6xl mx-auto p-6 rounded-lg bg-white border border-gray-200">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Page d’accueil</h1>
           <p className="mt-2 text-sm leading-6 text-gray-600">
@@ -27,7 +27,17 @@ export default function HomepageAdmin() {
             principale.
           </p>
         </div>
-        {isPending || !settings ? (
+        {isError ? (
+          <div role="alert" className="space-y-3">
+            <p>
+              Impossible de charger les réglages. Vos contenus n’ont pas été
+              modifiés.
+            </p>
+            <Button variant="outline" onClick={() => refetch()}>
+              Réessayer
+            </Button>
+          </div>
+        ) : isPending || !settings ? (
           <div className="flex min-h-48 items-center justify-center">
             <Loader2
               aria-label="Chargement"

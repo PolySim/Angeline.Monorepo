@@ -14,14 +14,13 @@ export const getCategories = async (): Promise<Category[]> => {
       },
     });
     if (!response.ok) {
-      console.error("Error fetching categories", response);
-      return [];
+      throw new Error("Impossible de charger les reportages.");
     }
     const data = await response.json();
     return data;
   } catch (error) {
     console.error("Error fetching categories", error);
-    return [];
+    throw new Error("Impossible de charger les reportages.");
   }
 };
 
@@ -46,24 +45,25 @@ export const getCategoriesActive = async (): Promise<Category[]> => {
 };
 
 export const getCategoryById = async (
-  categoryId: string
-): Promise<Category> => {
+  categoryId: string,
+): Promise<Category | null> => {
   try {
-    const response = await fetch(`${config.API_URL}/category/${categoryId}`, {
-      cache: "force-cache",
-      next: {
-        tags: [`categories-${categoryId}`],
+    const response = await fetch(
+      `${config.API_URL}/category/${encodeURIComponent(categoryId)}`,
+      {
+        cache: "force-cache",
+        next: {
+          tags: [`categories-${categoryId}`],
+        },
       },
-    });
-    if (!response.ok) {
-      console.error("Error fetching category", response);
-      return {} as Category;
-    }
+    );
+    if (response.status === 404) return null;
+    if (!response.ok) throw new Error("Impossible de charger le reportage.");
     const data = await response.json();
     return data;
   } catch (error) {
     console.error("Error fetching category", error);
-    return {} as Category;
+    throw new Error("Impossible de charger le reportage.");
   }
 };
 
@@ -83,7 +83,7 @@ export const toggleCategoryVisibility = async (categoryId: string) => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
     if (!response.ok) {
       console.error("Failed to toggle category visibility", response);
@@ -94,7 +94,7 @@ export const toggleCategoryVisibility = async (categoryId: string) => {
     revalidateTag(`categories-${categoryId}`);
     revalidateTag("categories-active");
 
-    return response.json();
+    return { success: true };
   } catch (error) {
     console.error("Error toggling category visibility", error);
   }

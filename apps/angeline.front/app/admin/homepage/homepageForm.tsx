@@ -49,53 +49,58 @@ export default function HomepageForm({
         className="flex flex-col gap-6"
         onSubmit={form.handleSubmit(onSubmit)}
       >
-        <div className="flex items-start gap-3">
-          <input
-            id="homepage-visible"
-            type="checkbox"
-            className="mt-1 size-4 accent-gray-950"
-            {...form.register("visible")}
-          />
-          <div>
-            <label
-              htmlFor="homepage-visible"
-              className="font-medium text-gray-950"
-            >
-              Afficher le contenu éditorial
-            </label>
-            <p className="mt-1 text-sm leading-6 text-gray-600">
-              Désactivé, l’accueil affiche uniquement la photographie.
-            </p>
+        <fieldset disabled={isPending} className="flex flex-col gap-6">
+          <div className="flex items-start gap-3">
+            <input
+              id="homepage-visible"
+              type="checkbox"
+              className="mt-1 size-4 accent-gray-950"
+              {...form.register("visible")}
+            />
+            <div>
+              <label
+                htmlFor="homepage-visible"
+                className="font-medium text-gray-950"
+              >
+                Afficher le contenu éditorial
+              </label>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Désactivé, l’accueil affiche uniquement la photographie.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <FormInput
-          name="title"
-          label="Titre"
-          description="Titre principal affiché sous la photographie."
-          placeholder="Titre de la page d’accueil"
-        />
-        <FormArea
-          name="content"
-          label="Texte de présentation"
-          description="Les quatre premiers reportages visibles apparaissent ensuite automatiquement."
-          placeholder="Présentation du travail photographique"
-          className="min-h-32"
-        />
+          <FormInput
+            name="title"
+            label="Titre"
+            description="Titre principal affiché sous la photographie."
+            placeholder="Titre de la page d’accueil"
+          />
+          <FormArea
+            name="content"
+            label="Texte de présentation"
+            description="Les quatre premiers reportages visibles apparaissent ensuite automatiquement."
+            placeholder="Présentation du travail photographique"
+            className="min-h-32"
+          />
 
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending || !form.formState.isDirty}
-            onClick={() => form.reset()}
-          >
-            Annuler
-          </Button>
-          <Button type="submit" disabled={isPending || !form.formState.isDirty}>
-            {isPending ? "Enregistrement…" : "Enregistrer"}
-          </Button>
-        </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending || !form.formState.isDirty}
+              onClick={() => form.reset()}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="submit"
+              disabled={isPending || !form.formState.isDirty}
+            >
+              {isPending ? "Enregistrement…" : "Enregistrer"}
+            </Button>
+          </div>
+        </fieldset>
       </form>
     </Form>
   );

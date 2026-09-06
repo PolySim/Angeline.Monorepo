@@ -1,8 +1,10 @@
 import Link from "next/link";
 import MenuContainer from "./menuContainer";
 import SocialNetwork from "./socialNetwork";
+import { getCategoriesActive } from "@/action/category.action";
 
-const Header = () => {
+const Header = async () => {
+  const categories = await getCategoriesActive();
   return (
     <>
       <div className="p-6 pb-2 md:pb-6">
@@ -17,7 +19,7 @@ const Header = () => {
           <p>Photographe</p>
         </div>
       </div>
-      <MenuContainer />
+      <MenuContainer categories={categories} />
       <SocialNetwork isHeader />
     </>
   );

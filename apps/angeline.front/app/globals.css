@@ -104,3 +104,8 @@
 
   scrollbar-width: none;
 }
+
+/* Keep the public palette unchanged; admin actions need readable contrast. */
+.admin-shell {
+  --primary-foreground: #072f30;
+}

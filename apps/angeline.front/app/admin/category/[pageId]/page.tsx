@@ -19,7 +19,7 @@ export default function CategoryPage() {
         <AddImage />
         <DownloadCategoryButton />
       </div>
-      <div className="flex flex-col flex-1 w-11/12 max-w-6xl mx-auto p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="flex flex-col flex-1 w-11/12 max-w-6xl mx-auto p-4 rounded-lg bg-white border border-gray-200">
         <Suspense
           fallback={
             <div className="flex items-center justify-center flex-1">

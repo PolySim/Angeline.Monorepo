@@ -1,53 +1,85 @@
 "use client";
 
-import { FormInput } from "@/components/form/formInput";
-import { Form } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { useCreateImageByChunks } from "@/queries/useImage";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useTransition } from "react";
-import { useForm } from "react-hook-form";
-import z from "zod";
-
-const formSchema = z.object({
-  images: z.array(z.instanceof(File)).refine((files) => files.length > 0, {
-    message: "Vous devez sélectionner au moins une image",
-  }),
-});
+import { useRef, useState } from "react";
 
 const AddImage = () => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      images: [],
-    },
+  const input = useRef<HTMLInputElement>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [progress, setProgress] = useState({
+    total: 0,
+    completed: 0,
+    failed: [] as string[],
   });
-  const [isPending, startTransition] = useTransition();
-  const { mutate: uploadImagesByChunks } = useCreateImageByChunks();
+  const { mutateAsync: uploadImage } = useCreateImageByChunks();
 
   const onSubmit = async (data: FileList | null) => {
-    if (!data) return;
-    startTransition(async () => {
-      await Promise.all(
-        Array.from(data).map((image) => {
-          uploadImagesByChunks(image);
-        })
-      );
-    });
+    if (!data?.length || isPending) return;
+    const files = Array.from(data);
+    setIsPending(true);
+    setProgress({ total: files.length, completed: 0, failed: [] });
+    try {
+      // Limit memory and chunk requests by uploading one file at a time.
+      for (const file of files) {
+        let success = false;
+        try {
+          success = (await uploadImage(file)).success;
+        } catch {
+          /* The mutation reports the error. */
+        }
+        setProgress((current) => ({
+          ...current,
+          completed: current.completed + 1,
+          failed: success ? current.failed : [...current.failed, file.name],
+        }));
+      }
+    } finally {
+      setIsPending(false);
+      if (input.current) input.current.value = "";
+    }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={(e) => e.preventDefault()}>
-        <FormInput
-          name="images"
-          type="file"
-          multiple
-          accept="image/*"
-          onFilesChange={(e) => onSubmit(e.target.files)}
-          disabled={isPending}
-        />
-      </form>
-    </Form>
+    <div className="w-full sm:w-auto sm:flex-1 max-w-lg">
+      <label htmlFor="report-images" className="block text-sm font-medium mb-2">
+        Ajouter des images
+      </label>
+      <Input
+        id="report-images"
+        ref={input}
+        type="file"
+        multiple
+        accept="image/*"
+        onChange={(event) => void onSubmit(event.target.files)}
+        disabled={isPending}
+        aria-describedby="upload-progress"
+        className="bg-white"
+      />
+      <p
+        id="upload-progress"
+        role="status"
+        className="text-sm text-gray-600 mt-2"
+      >
+        {isPending
+          ? `Import en cours : ${progress.completed} / ${progress.total}. Gardez cette page ouverte.`
+          : progress.total
+            ? `${progress.completed - progress.failed.length} / ${progress.total} images ajoutées.${progress.failed.length ? " Réessayez les fichiers en échec." : ""}`
+            : "Vous pouvez sélectionner plusieurs photographies."}
+      </p>
+      {progress.failed.length > 0 && (
+        <ul
+          aria-label="Fichiers à réessayer"
+          className="mt-2 text-sm text-red-700 list-disc pl-5"
+        >
+          {progress.failed.map((name, index) => (
+            <li key={index} className="break-words">
+              {name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 };
 

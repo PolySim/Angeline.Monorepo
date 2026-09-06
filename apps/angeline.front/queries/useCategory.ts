@@ -24,10 +24,11 @@ export const useCategories = () => {
   });
 };
 
-export const useCategoriesActive = () => {
+export const useCategoriesActive = (initialData?: Category[]) => {
   return useQuery({
     queryKey: ["categories", "active"],
     queryFn: getCategoriesActive,
+    initialData,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     staleTime: 1000 * 60 * 5,
@@ -51,33 +52,21 @@ export const useToggleCategoryVisibility = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (categoryId: string) => toggleCategoryVisibility(categoryId),
-    onMutate: (categoryId) => {
-      queryClient.cancelQueries({ queryKey: ["categories", "all"] });
-      const previousCategories = queryClient.getQueryData([
-        "categories",
-        "all",
-      ]);
-      queryClient.setQueryData(["categories", "all"], (old: Category[]) =>
-        old.map((category) =>
-          category.id === categoryId
-            ? { ...category, disabled: !category.disabled }
-            : category
-        )
-      );
-      return { previousCategories };
+    mutationFn: async (categoryId: string) => {
+      const response = await toggleCategoryVisibility(categoryId);
+      if (!response?.success) throw new Error("Visibility update failed");
+      return response;
     },
-    onError: (_error, _categoryId, context) => {
-      queryClient.setQueryData(
-        ["categories", "all"],
-        context?.previousCategories
-      );
+    onSuccess: () => {
+      toast.success("Visibilité mise à jour");
+    },
+    onError: () => {
       toast.error(
-        "Une erreur est survenue lors de la modification de la visibilité du reportage"
+        "Une erreur est survenue lors de la modification de la visibilité du reportage",
       );
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      return queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
   });
 };
@@ -98,13 +87,13 @@ export const useCreateCategory = () => {
         router.push(`/admin/category/${res.data.id}`);
       } else {
         toast.error(
-          "Une erreur est survenue lors de la création de la catégorie"
+          "Une erreur est survenue lors de la création de la catégorie",
         );
       }
     },
     onError: () => {
       toast.error(
-        "Une erreur est survenue lors de la création de la catégorie"
+        "Une erreur est survenue lors de la création de la catégorie",
       );
     },
     onSettled: () => {
@@ -117,29 +106,21 @@ export const useDeleteCategory = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (categoryId: string) => deleteCategory(categoryId),
-    onMutate: (categoryId) => {
-      queryClient.cancelQueries({ queryKey: ["categories", "all"] });
-      const previousCategories = queryClient.getQueryData([
-        "categories",
-        "all",
-      ]);
-      queryClient.setQueryData(["categories", "all"], (old: Category[]) =>
-        old.filter((category) => category.id !== categoryId)
-      );
-      return { previousCategories };
+    mutationFn: async (categoryId: string) => {
+      const response = await deleteCategory(categoryId);
+      if (!response.success) throw new Error("Deletion failed");
+      return response;
     },
-    onError: (_error, _categoryId, context) => {
-      queryClient.setQueryData(
-        ["categories", "all"],
-        context?.previousCategories
-      );
+    onSuccess: () => {
+      toast.success("Reportage supprimé");
+    },
+    onError: () => {
       toast.error(
-        "Une erreur est survenue lors de la suppression du reportage"
+        "Une erreur est survenue lors de la suppression du reportage",
       );
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      return queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
   });
 };
@@ -192,13 +173,13 @@ export const useUpdateCategory = () => {
         toast.success("Catégorie modifiée avec succès");
       } else {
         toast.error(
-          "Une erreur est survenue lors de la modification de la catégorie"
+          "Une erreur est survenue lors de la modification de la catégorie",
         );
       }
     },
     onError: () => {
       toast.error(
-        "Une erreur est survenue lors de la modification de la catégorie"
+        "Une erreur est survenue lors de la modification de la catégorie",
       );
     },
     onSettled: () => {

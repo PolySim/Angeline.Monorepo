@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { portfolioPath } from "@/lib/seo";
 import { useCategoriesActive } from "@/queries/useCategory";
+import type { Category } from "@repo/types/entities";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,8 +14,13 @@ import {
   NavigationMenuTrigger,
 } from "../ui/navigation-menu";
 
-const MenuDesktop = () => {
-  const { data: categories, isPending } = useCategoriesActive();
+const MenuDesktop = ({
+  categories: initialCategories,
+}: {
+  categories: Category[];
+}) => {
+  const { data: categories, isPending } =
+    useCategoriesActive(initialCategories);
 
   const categoriesFiltered = categories?.filter(
     (category) => ![1, 2, 3].includes(category.ordered),

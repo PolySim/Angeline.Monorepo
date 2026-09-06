@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -20,8 +21,8 @@ import { useForm } from "react-hook-form";
 import z from "zod";
 
 const formSchema = z.object({
-  name: z.string().min(1),
-  article: z.string().min(1),
+  name: z.string().trim().min(1, "Saisissez un nom pour le reportage."),
+  article: z.string(),
 });
 
 export default function CreateCategory() {
@@ -44,11 +45,15 @@ export default function CreateCategory() {
       <DialogContent className="w-11/12 max-w-6xl">
         <DialogHeader>
           <DialogTitle>Créer un reportage</DialogTitle>
+          <DialogDescription>
+            Donnez un nom à votre série, puis ajoutez ses photographies.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
-            className="flex gap-4 w-full"
-            onSubmit={(e) => e.preventDefault()}
+            id="create-report"
+            className="flex flex-col gap-4 w-full"
+            onSubmit={form.handleSubmit((data) => createCategory(data))}
           >
             <div className="w-full">
               <FormInput
@@ -59,7 +64,11 @@ export default function CreateCategory() {
               />
             </div>
             <div className="w-full">
-              <FormArea name="article" label="Article" disabled={isPending} />
+              <FormArea
+                name="article"
+                label="Texte de présentation (facultatif)"
+                disabled={isPending}
+              />
             </div>
           </form>
         </Form>
@@ -71,8 +80,9 @@ export default function CreateCategory() {
           </DialogClose>
           <Button
             type="submit"
+            form="create-report"
             disabled={isPending}
-            onClick={() => createCategory(form.getValues())}
+            className="bg-gray-950 text-white hover:bg-gray-800"
           >
             {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Créer"}
           </Button>

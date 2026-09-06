@@ -19,7 +19,7 @@ const ReorderImage = () => {
   useEffect(() => {
     setImages(images || []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [images?.length]);
+  }, [images]);
 
   const { mutate: reorderImages } = useReorderImages({
     onErrorCallback: () => {
@@ -28,21 +28,31 @@ const ReorderImage = () => {
   });
 
   const onReorder = (lastImages: ImageType[]) => {
-    if (lastImages.some((image, i) => image.id !== imagesSorted[i].id)) return;
+    if (lastImages.some((image, i) => image.id !== imagesSorted[i]?.id)) return;
     reorderImages(lastImages.map((image) => image.id));
   };
 
   const onEnd = useDebounce(onReorder, 500);
 
   return (
-    <div
-      className="grid grid-cols-2 gap-4 md:grid-cols-3 justify-center items-stretch w-full max-w-6xl mx-auto p-4"
-      ref={parent}
-    >
-      {imagesSorted.map((image) => (
-        <ImageContainer key={image.id} image={image} />
-      ))}
-    </div>
+    <section className="mt-6 border-t pt-6">
+      <h2 className="px-4 text-lg font-semibold">
+        Photographies · {imagesSorted.length}
+      </h2>
+      <p className="px-4 mt-2 text-sm text-gray-600">
+        {imagesSorted.length
+          ? "Glissez les photographies pour changer leur ordre. L’ordre est enregistré automatiquement."
+          : "Utilisez « Ajouter des images » pour compléter ce reportage."}
+      </p>
+      <div
+        className="grid grid-cols-2 gap-4 md:grid-cols-3 justify-center items-stretch w-full max-w-6xl mx-auto p-4"
+        ref={parent}
+      >
+        {imagesSorted.map((image) => (
+          <ImageContainer key={image.id} image={image} />
+        ))}
+      </div>
+    </section>
   );
 };
 

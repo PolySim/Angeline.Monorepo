@@ -11,20 +11,22 @@ const ToggleVisibilities = ({
   categoryId: string;
   disabled: boolean;
 }) => {
-  const { mutate: toggleCategoryVisibility } = useToggleCategoryVisibility();
+  const { mutate: toggleCategoryVisibility, isPending } =
+    useToggleCategoryVisibility();
 
   return (
     <Button
-      size="icon"
+      variant="ghost"
+      disabled={isPending}
       onClick={() => toggleCategoryVisibility(categoryId)}
-      className={`p-2 rounded-md transition-colors bg-transparent shadow-none ${
-        !disabled
-          ? "text-orange-600 hover:bg-orange-50"
-          : "text-green-600 hover:bg-green-50"
-      }`}
-      title={disabled ? "Désactiver" : "Activer"}
+      aria-label={
+        disabled
+          ? "Afficher le reportage sur le site"
+          : "Masquer le reportage du site"
+      }
     >
-      {disabled ? <EyeOff size={18} /> : <Eye size={18} />}
+      {disabled ? <Eye aria-hidden="true" /> : <EyeOff aria-hidden="true" />}
+      {isPending ? "Mise à jour…" : disabled ? "Afficher" : "Masquer"}
     </Button>
   );
 };

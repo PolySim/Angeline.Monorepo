@@ -32,7 +32,7 @@ export class CategoryRepository extends Repository<Category> {
       select: { ordered: true },
       order: { ordered: 'DESC' },
     });
-    category.ordered = maxOrdered[0].ordered + 1;
+    category.ordered = Math.max(3, maxOrdered[0]?.ordered ?? 3) + 1;
     const saved = await this.save(category);
     return saved as unknown as Category;
   }

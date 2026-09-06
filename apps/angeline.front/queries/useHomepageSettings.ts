@@ -9,7 +9,11 @@ import { toast } from "sonner";
 export const useHomepageSettings = () => {
   return useQuery({
     queryKey: ["homepage-settings"],
-    queryFn: getHomepageSettings,
+    queryFn: async () => {
+      const settings = await getHomepageSettings();
+      if (!settings) throw new Error("Impossible de charger les réglages.");
+      return settings;
+    },
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     staleTime: 1000 * 60 * 5,

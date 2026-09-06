@@ -37,31 +37,17 @@ export const useUpdateImageDescription = () => {
     }: {
       imageId: string;
       description: string;
-    }) => updateImageDescription(imageId, description, pageId),
-    onMutate: (variables) => {
-      queryClient.cancelQueries({ queryKey: ["images", pageId] });
-      const previousImages = queryClient.getQueryData(["images", pageId]);
-      queryClient.setQueryData(["images", pageId], (old: Image[]) =>
-        old.map((image) =>
-          image.id === variables.imageId
-            ? { ...image, description: variables.description }
-            : image
-        )
-      );
-      return { previousImages };
+    }) =>
+      updateImageDescription(imageId, description, pageId).then((response) => {
+        if (!response?.success) throw new Error("Image update failed");
+        return response;
+      }),
+    onSuccess: () => {
+      toast.success("Légende enregistrée");
     },
-    onSuccess: (result, variables, context) => {
-      if (!result?.success) {
-        toast.error(
-          "Une erreur est survenue lors de la modification de la description de l'image"
-        );
-        queryClient.setQueryData(["images", pageId], context?.previousImages);
-      }
-    },
-    onError: (error, variables, context) => {
-      queryClient.setQueryData(["images", pageId], context?.previousImages);
+    onError: () => {
       toast.error(
-        "Une erreur est survenue lors de la modification de la description de l'image"
+        "Une erreur est survenue lors de la modification de la description de l'image",
       );
     },
     onSettled: () => {
@@ -74,25 +60,15 @@ export const useDeleteImage = () => {
   const queryClient = useQueryClient();
   const { pageId } = useAppParams();
   return useMutation({
-    mutationFn: (imageId: string) => deleteImage(imageId, pageId),
-    onMutate: (variables) => {
-      queryClient.cancelQueries({ queryKey: ["images", pageId] });
-      const previousImages = queryClient.getQueryData(["images", pageId]);
-      queryClient.setQueryData(["images", pageId], (old: Image[]) =>
-        old.filter((image) => image.id !== variables)
-      );
-      return { previousImages };
+    mutationFn: (imageId: string) =>
+      deleteImage(imageId, pageId).then((response) => {
+        if (!response?.success) throw new Error("Image deletion failed");
+        return response;
+      }),
+    onSuccess: () => {
+      toast.success("Photographie supprimée");
     },
-    onSuccess: (result, variables, context) => {
-      if (!result?.success) {
-        toast.error(
-          "Une erreur est survenue lors de la suppression de l'image"
-        );
-        queryClient.setQueryData(["images", pageId], context?.previousImages);
-      }
-    },
-    onError: (error, variables, context) => {
-      queryClient.setQueryData(["images", pageId], context?.previousImages);
+    onError: () => {
       toast.error("Une erreur est survenue lors de la suppression de l'image");
     },
     onSettled: () => {
@@ -113,15 +89,15 @@ export const useReorderImages = (props?: { onErrorCallback?: () => void }) => {
         old.map((image) =>
           imageIds.includes(image.id)
             ? { ...image, ordered: imageIds.indexOf(image.id) }
-            : image
-        )
+            : image,
+        ),
       );
       return { previousImages };
     },
     onSuccess: (result, variables, context) => {
       if (!result?.success) {
         toast.error(
-          "Une erreur est survenue lors de la réorganisation des images"
+          "Une erreur est survenue lors de la réorganisation des images",
         );
         queryClient.setQueryData(["images", pageId], context?.previousImages);
         props?.onErrorCallback?.();
@@ -130,7 +106,7 @@ export const useReorderImages = (props?: { onErrorCallback?: () => void }) => {
     onError: (error, variables, context) => {
       queryClient.setQueryData(["images", pageId], context?.previousImages);
       toast.error(
-        "Une erreur est survenue lors de la réorganisation des images"
+        "Une erreur est survenue lors de la réorganisation des images",
       );
       props?.onErrorCallback?.();
     },
@@ -247,11 +223,11 @@ export const useCreateImageByChunks = () => {
       } catch (error) {
         console.error(
           "Error in useCreateImageByChunks - Exception non gérée:",
-          error
+          error,
         );
         console.error(
           "Stack trace:",
-          error instanceof Error ? error.stack : "N/A"
+          error instanceof Error ? error.stack : "N/A",
         );
 
         // Essayer d'annuler si on a le fileHash
@@ -273,7 +249,7 @@ export const useCreateImageByChunks = () => {
         toast.success("Image uploadée avec succès");
         if (data.data) {
           queryClient.setQueryData(["images", pageId], (old: Image[]) => [
-            ...old,
+            ...(old || []),
             data.data,
           ]);
         }

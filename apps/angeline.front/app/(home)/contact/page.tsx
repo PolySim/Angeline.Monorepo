@@ -1,32 +1,21 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, createPageMetadata } from "@/lib/seo";
 import ContactImg from "@/public/contact.jpg";
 import ContactForm from "./contactForm";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Contact",
   description:
-    "Contactez Angeline Desdevises, photographe de guerre spécialisée dans les conflits du Moyen-Orient (Syrie, Liban). Disponible pour missions de photojournalisme international.",
-  alternates: {
-    canonical: absoluteUrl("/contact"),
-  },
-  openGraph: {
-    title: "Contact | Angeline Desdevises",
-    description:
-      "Contactez Angeline Desdevises pour des commandes presse, corporate ou des missions de photojournalisme.",
-    url: absoluteUrl("/contact"),
-    type: "website",
-    images: [
-      {
-        url: absoluteUrl("/contact.jpg"),
-        width: 1280,
-        height: 640,
-        alt: "Contact Angeline Desdevises",
-      },
-    ],
-  },
-};
+    "Contactez Angeline Desdevises, photographe basée dans les Hautes-Pyrénées et mobile dans le sud-ouest pour des commandes presse ou corporate.",
+  path: "/contact",
+  images: [
+    {
+      url: absoluteUrl("/contact.jpg"),
+      alt: "Contact Angeline Desdevises",
+    },
+  ],
+});
 
 export default function AboutPage() {
   return (
@@ -37,6 +26,7 @@ export default function AboutPage() {
           width={1280}
           height={640}
           alt="Paysage photographié par Angeline Desdevises"
+          sizes="(max-width: 1536px) 75vw, 1152px"
           className="w-full h-auto max-h-[400px] object-contain"
         />
       </div>

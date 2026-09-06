@@ -3,14 +3,14 @@
 import { FormArea } from "@/components/form/formArea";
 import { FormInput } from "@/components/form/formInput";
 import { Form } from "@/components/ui/form";
-import useDebounce from "@/hook/useDebonce";
+import { Button } from "@/components/ui/button";
 import { useCategoryById, useUpdateCategory } from "@/queries/useCategory";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import z from "zod";
 
 const formSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().trim().min(1, "Saisissez un nom pour le reportage."),
   article: z.string().optional(),
 });
 
@@ -18,7 +18,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function UpdateCategoryInformation() {
   const { data: category } = useCategoryById();
-  const { mutate: updateCategory } = useUpdateCategory();
+  const { mutate: updateCategory, isPending } = useUpdateCategory();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -28,46 +28,57 @@ export default function UpdateCategoryInformation() {
     },
   });
 
-  const onValid = ({
-    type,
-    value,
-  }: {
-    type: "name" | "article";
-    value: string;
-  }) => {
-    if (form.getValues(type) !== value) return;
-
-    updateCategory({
-      content: { [type]: value },
-    });
-  };
-
-  const onChange = useDebounce(
-    ({ type, value }: { type: "name" | "article"; value: string }) => {
-      onValid({ type, value });
-    },
-    500
-  );
-
   return (
     <Form {...form}>
       <form
-        onSubmit={(e) => e.preventDefault()}
-        className="grid grid-cols-1 md:grid-cols-2 gap-6 px-10 items-start"
+        onSubmit={form.handleSubmit((data) =>
+          updateCategory(
+            { content: data },
+            {
+              onSuccess: (response) => {
+                if (response.success) form.reset(data);
+              },
+            },
+          ),
+        )}
+        className="space-y-5 p-2 md:p-4"
       >
+        <h1 className="text-2xl font-bold break-words">
+          {category?.name || "Modifier le reportage"}
+        </h1>
         <FormInput
           name="name"
           label="Nom du reportage"
           placeholder="Nom du reportage"
           required
-          onChange={(value) => onChange({ type: "name", value })}
+          disabled={isPending}
         />
         <FormArea
           name="article"
-          label="Article"
-          placeholder="Article"
-          onChange={(value) => onChange({ type: "article", value })}
+          label="Texte de présentation"
+          description="Ce texte apparaît dans le reportage et sert à sa description dans les moteurs de recherche."
+          placeholder="Présentez cette série photographique"
+          disabled={isPending}
+          className="min-h-32"
         />
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <span role="status" className="text-sm text-gray-600">
+            {form.formState.isDirty
+              ? "Modifications non enregistrées"
+              : "À jour"}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending || !form.formState.isDirty}
+            onClick={() => form.reset()}
+          >
+            Annuler
+          </Button>
+          <Button type="submit" disabled={isPending || !form.formState.isDirty}>
+            {isPending ? "Enregistrement…" : "Enregistrer"}
+          </Button>
+        </div>
       </form>
     </Form>
   );

@@ -15,11 +15,17 @@ import {
   AccordionTrigger,
 } from "../ui/accordion";
 import BurgerMenuTrigger from "./burgerMenuTrigger";
+import type { Category } from "@repo/types/entities";
 
-const MenuMobile = () => {
+const MenuMobile = ({
+  categories: initialCategories,
+}: {
+  categories: Category[];
+}) => {
   const [isReportagesOpen, setIsReportagesOpen] = useState(false);
   const isOpen = useMenuStore((state) => state.isOpen);
-  const { data: categories, isPending } = useCategoriesActive();
+  const { data: categories, isPending } =
+    useCategoriesActive(initialCategories);
   const { pageId } = useAppParams();
   const activePortfolioId = getPortfolioIdFromParam(pageId);
 
@@ -27,6 +33,8 @@ const MenuMobile = () => {
     <>
       <BurgerMenuTrigger />
       <div
+        inert={!isOpen}
+        aria-hidden={!isOpen}
         className={cn(
           "flex flex-col justify-center items-start gap-4 fixed top-0 left-0 right-0 bottom-0 overflow-x-hidden transition-transform duration-300 bg-white font-bold font-helvetica text-md text-center z-20",
           {

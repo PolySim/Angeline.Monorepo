@@ -28,15 +28,12 @@ const ImageElement = ({
           <>
             <Image
               src={`${config.IMAGE_URL}/image/${image.id}/blur`}
-              alt={
-                image.description ||
-                image.name ||
-                "Photographie reportage Angeline Desdevises"
-              }
+              alt=""
+              aria-hidden="true"
               width={500}
               height={325}
               unoptimized
-              priority
+              loading="lazy"
               className="w-full"
             />
             <div className="absolute inset-0 backdrop-blur-sm" />
@@ -51,7 +48,8 @@ const ImageElement = ({
           }
           width={500}
           height={325}
-          onLoadingComplete={() => setIsLoaded(true)}
+          sizes="(max-width: 768px) 50vw, (max-width: 1152px) 33vw, 368px"
+          onLoad={() => setIsLoaded(true)}
           loading="lazy"
           className={cn("w-full h-auto", {
             "absolute top-0 left-0 -z-10": !isLoaded,

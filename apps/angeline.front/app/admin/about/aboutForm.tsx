@@ -3,88 +3,58 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useBiography, useUpdateBiography } from "@/queries/useInformation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Lang } from "@repo/types/entities";
+import { Information, Lang } from "@repo/types/entities";
 import { useForm } from "react-hook-form";
 import z from "zod";
 
 const formSchema = z.object({
-  contentFR: z.string().min(1),
-  contentUS: z.string().min(1),
+  content: z.string().trim().min(1, "Saisissez la biographie."),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-const AboutForm = () => {
-  const { data: biography } = useBiography();
+const BiographyForm = ({ information }: { information: Information }) => {
   const { mutate: updateBiography, isPending } = useUpdateBiography();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      contentFR:
-        biography?.find((item) => item.lang === Lang.FR)?.content || "",
-      contentUS:
-        biography?.find((item) => item.lang === Lang.EN)?.content || "",
+      content: information.content,
     },
   });
-
-  const onReset = (lang: Lang) => {
-    form.setValue(
-      lang === Lang.FR ? "contentFR" : "contentUS",
-      biography?.find((item) => item.lang === lang)?.content || ""
-    );
-  };
 
   return (
     <Form {...form}>
       <form
         className="flex flex-col gap-4"
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={form.handleSubmit((data) =>
+          updateBiography(
+            { lang: information.lang, content: data.content },
+            { onSuccess: () => form.reset(data) },
+          ),
+        )}
       >
-        <FormArea name="contentFR" label="Biographie FR" />
+        <FormArea
+          name="content"
+          label={
+            information.lang === Lang.FR
+              ? "Biographie en français"
+              : "Biographie en anglais"
+          }
+          disabled={isPending}
+          className="min-h-64"
+        />
         <div className="flex justify-end gap-2 ">
           <Button
             variant="outline"
             type="button"
-            disabled={isPending}
-            onClick={() => onReset(Lang.FR)}
+            disabled={isPending || !form.formState.isDirty}
+            onClick={() => form.reset()}
           >
             Annuler
           </Button>
-          <Button
-            type="submit"
-            disabled={isPending}
-            onClick={() =>
-              updateBiography({
-                lang: Lang.FR,
-                content: form.getValues("contentFR"),
-              })
-            }
-          >
-            Enregistrer
-          </Button>
-        </div>
-        <FormArea name="contentUS" label="Biographie US" />
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="outline"
-            disabled={isPending}
-            type="button"
-            onClick={() => onReset(Lang.EN)}
-          >
-            Annuler
-          </Button>
-          <Button
-            type="submit"
-            disabled={isPending}
-            onClick={() =>
-              updateBiography({
-                lang: Lang.EN,
-                content: form.getValues("contentUS"),
-              })
-            }
-          >
-            Enregistrer
+          <Button type="submit" disabled={isPending || !form.formState.isDirty}>
+            {isPending ? "Enregistrement…" : "Enregistrer"}
           </Button>
         </div>
       </form>
@@ -92,4 +62,13 @@ const AboutForm = () => {
   );
 };
 
-export default AboutForm;
+export default function AboutForm() {
+  const { data: biography = [] } = useBiography();
+  return (
+    <div className="space-y-10">
+      {biography.map((information) => (
+        <BiographyForm key={information.id} information={information} />
+      ))}
+    </div>
+  );
+}

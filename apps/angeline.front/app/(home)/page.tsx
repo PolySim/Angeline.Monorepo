@@ -7,7 +7,7 @@ import HomeImg from "@/public/home.jpg";
 
 export default async function Home() {
   const settings = await getHomepageSettings();
-  const categories = settings.visible ? await getCategoriesActive() : [];
+  const categories = settings?.visible ? await getCategoriesActive() : [];
   const featuredCategories = categories
     .filter((category) => !category.disabled)
     .sort((a, b) => a.ordered - b.ordered)
@@ -21,11 +21,12 @@ export default async function Home() {
           alt="Angeline Desdevises - Photographie de guerre et reportage au Moyen-Orient"
           width={1920}
           height={1080}
+          sizes="(max-width: 1152px) 100vw, 1152px"
           priority
           className="w-full h-auto"
         />
       </div>
-      {settings.visible && (
+      {settings?.visible && (
         <section className="max-w-3xl mt-8 md:mt-10 mb-10 font-helvetica">
           <h1 className="text-2xl md:text-4xl font-bold text-gray-950">
             {settings.title}

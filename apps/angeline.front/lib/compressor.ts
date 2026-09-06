@@ -62,7 +62,7 @@ export const compressor = ({
         void reduceSize();
       };
 
-      img.src = (event.target as any).result as string;
+      img.src = (event.target as FileReader).result as string;
     };
 
     reader.onerror = (error) => {

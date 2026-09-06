@@ -1,30 +1,18 @@
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import CreateCategory from "./createCategory";
 import Listing from "./listing";
 
 export default function Admin() {
   return (
-    <div className="flex flex-col flex-1 w-11/12 max-w-6xl mx-auto p-6 rounded-lg shadow-sm border border-gray-200">
-      <div className="border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
+    <div className="w-11/12 max-w-6xl mx-auto">
+      <div className="mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Gestion des reportages
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900">Reportages</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Retrouvez, modifiez et publiez vos séries photographiques.
+            </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/admin/homepage">Page d&apos;accueil</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/admin/about">A propos</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/admin/order">Ordre des reportages</Link>
-            </Button>
-            <CreateCategory />
-          </div>
+          <CreateCategory />
         </div>
       </div>
       <Listing />
