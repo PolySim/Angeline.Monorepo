@@ -5,6 +5,13 @@ export interface Information {
   lang: string;
 }
 
+export interface HomepageSettings {
+  id: string;
+  visible: boolean;
+  title: string;
+  content: string;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -34,6 +41,10 @@ export interface UpdateInformationDto {
   lang: string;
   id: string;
 }
+
+export type UpdateHomepageSettingsDto = Partial<
+  Pick<HomepageSettings, 'visible' | 'title' | 'content'>
+>;
 
 export interface CreateCategoryDto {
   name: string;

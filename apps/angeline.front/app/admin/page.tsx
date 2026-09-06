@@ -15,6 +15,9 @@ export default function Admin() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" asChild>
+              <Link href="/admin/homepage">Page d&apos;accueil</Link>
+            </Button>
+            <Button variant="outline" asChild>
               <Link href="/admin/about">A propos</Link>
             </Button>
             <Button variant="outline" asChild>

@@ -5,6 +5,13 @@ export interface Information {
   lang: Lang;
 }
 
+export interface HomepageSettings {
+  id: string;
+  visible: boolean;
+  title: string;
+  content: string;
+}
+
 export enum Lang {
   FR = "fr",
   EN = "us",
@@ -38,6 +45,10 @@ export interface UpdateInformationDto {
   content?: string;
   lang?: string;
 }
+
+export type UpdateHomepageSettingsDto = Partial<
+  Pick<HomepageSettings, "visible" | "title" | "content">
+>;
 
 export interface CreateCategoryDto {
   name: string;

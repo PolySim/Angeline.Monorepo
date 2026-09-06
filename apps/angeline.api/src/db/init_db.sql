@@ -7,6 +7,21 @@ create table if not exists Information (
 
 create index if not exists Information_name_idx on Information (name);
 
+create table if not exists HomepageSettings (
+    id TEXT NOT NULL PRIMARY KEY,
+    visible BOOLEAN NOT NULL DEFAULT FALSE,
+    title TEXT NOT NULL DEFAULT '',
+    content TEXT NOT NULL DEFAULT ''
+);
+
+insert or ignore into HomepageSettings (id, visible, title, content)
+values (
+    'homepage',
+    FALSE,
+    'Angeline Desdevises, photographe documentaire et photojournaliste',
+    'Travail documentaire autour des conflits, des territoires et des récits humains, avec une attention particulière portée au Moyen-Orient, à la Syrie, au Liban, aux portraits et aux publications de presse.'
+);
+
 create table if not exists Category (
     id TEXT NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
