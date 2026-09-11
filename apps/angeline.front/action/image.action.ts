@@ -5,7 +5,10 @@ import { auth } from "@clerk/nextjs/server";
 import { Image } from "@repo/types/entities";
 import { revalidateTag } from "next/cache";
 
-export const getImagesByCategoryId = async (categoryId: string) => {
+export const getImagesByCategoryId = async (
+  categoryId: string,
+  strict = false,
+) => {
   try {
     const response = await fetch(
       `${config.API_URL}/image/category/${categoryId}`,
@@ -18,12 +21,13 @@ export const getImagesByCategoryId = async (categoryId: string) => {
     );
     if (!response.ok) {
       console.error("Error fetching images", response);
-      return [];
+      throw new Error("Impossible de charger les images");
     }
     const data = await response.json();
     return data as Image[];
   } catch (error) {
     console.error("Error fetching images", error);
+    if (strict) throw new Error("Impossible de charger les images");
     return [];
   }
 };

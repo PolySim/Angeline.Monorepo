@@ -2,33 +2,36 @@
 
 import { Button } from "@/components/ui/button";
 import { useToggleCategoryVisibility } from "@/queries/useCategory";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
-const ToggleVisibilities = ({
+export default function ToggleVisibilities({
   categoryId,
   disabled,
+  name,
 }: {
   categoryId: string;
   disabled: boolean;
-}) => {
-  const { mutate: toggleCategoryVisibility, isPending } =
-    useToggleCategoryVisibility();
-
+  name: string;
+}) {
+  const { mutate: toggle, isPending } = useToggleCategoryVisibility();
+  const label = `${disabled ? "Afficher" : "Masquer"} ${name}`;
   return (
     <Button
+      size="icon"
       variant="ghost"
       disabled={isPending}
-      onClick={() => toggleCategoryVisibility(categoryId)}
-      aria-label={
-        disabled
-          ? "Afficher le reportage sur le site"
-          : "Masquer le reportage du site"
-      }
+      onClick={() => toggle(categoryId)}
+      aria-label={disabled ? "Afficher le reportage sur le site" : "Masquer le reportage du site"}
+      title={label}
+      className="text-muted-foreground"
     >
-      {disabled ? <Eye aria-hidden="true" /> : <EyeOff aria-hidden="true" />}
-      {isPending ? "Mise à jour…" : disabled ? "Afficher" : "Masquer"}
+      {isPending ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      ) : disabled ? (
+        <Eye className="size-4" aria-hidden="true" />
+      ) : (
+        <EyeOff className="size-4" aria-hidden="true" />
+      )}
     </Button>
   );
-};
-
-export default ToggleVisibilities;
+}

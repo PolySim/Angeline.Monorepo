@@ -41,11 +41,8 @@ export default function UpdateCategoryInformation() {
             },
           ),
         )}
-        className="space-y-5 p-2 md:p-4"
+        className="space-y-5"
       >
-        <h1 className="text-2xl font-bold break-words">
-          {category?.name || "Modifier le reportage"}
-        </h1>
         <FormInput
           name="name"
           label="Nom du reportage"

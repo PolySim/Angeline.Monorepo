@@ -2,15 +2,22 @@
 
 import { SignOutButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, LogOut } from "lucide-react";
+import {
+  ArrowUpDown,
+  ExternalLink,
+  Images,
+  House,
+  LogOut,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navigation = [
-  { href: "/admin", label: "Reportages" },
-  { href: "/admin/order", label: "Ordre d’affichage" },
-  { href: "/admin/homepage", label: "Page d’accueil" },
-  { href: "/admin/about", label: "Biographie" },
+  { href: "/admin", label: "Reportages", icon: Images },
+  { href: "/admin/order", label: "Ordre d’affichage", icon: ArrowUpDown },
+  { href: "/admin/homepage", label: "Page d’accueil", icon: House },
+  { href: "/admin/about", label: "Biographie", icon: UserRound },
 ];
 
 export default function AdminShell({
@@ -19,61 +26,73 @@ export default function AdminShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
   return (
-    <div className="admin-shell min-h-screen bg-gray-50 text-gray-950 font-sans">
+    <div className="admin-ui min-h-screen bg-[#f6f8f8]">
       <a
         href="#admin-content"
-        className="sr-only focus:not-sr-only focus:block focus:p-4"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4"
       >
         Aller au contenu
       </a>
       <header className="border-b bg-white">
-        <div className="w-11/12 max-w-6xl mx-auto py-5 flex flex-wrap items-center justify-between gap-4">
-          <Link href="/admin" className="font-semibold text-lg">
-            Angeline Desdevises{" "}
-            <span className="block text-sm font-normal text-gray-600">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-8">
+          <Link href="/admin" className="min-w-0">
+            <span className="block text-base font-semibold">
+              Angeline Desdevises
+            </span>
+            <span className="text-sm text-muted-foreground">
               Administration
             </span>
           </Link>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <a href="/" target="_blank" rel="noreferrer">
-                <ExternalLink aria-hidden="true" /> Voir le site
-                <span className="sr-only"> (nouvel onglet)</span>
-              </a>
+          <div className="flex items-center gap-1 sm:gap-3">
+            <Button variant="ghost" asChild>
+              <Link
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Voir le site (nouvel onglet)"
+              >
+                <ExternalLink className="size-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Voir le site</span>
+              </Link>
             </Button>
             <SignOutButton>
-              <Button variant="ghost">
-                <LogOut aria-hidden="true" /> Déconnexion
+              <Button variant="outline">
+                <LogOut className="size-4" aria-hidden="true" />
+                <span className="hidden sm:inline">Déconnexion</span>
+                <span className="sr-only sm:hidden">Déconnexion</span>
               </Button>
             </SignOutButton>
           </div>
         </div>
         <nav
           aria-label="Administration"
-          className="w-11/12 max-w-6xl mx-auto flex flex-wrap gap-1 pb-3"
+          className="mx-auto flex max-w-6xl flex-wrap gap-1 px-3 sm:px-8"
         >
-          {navigation.map(({ href, label }) => {
+          {navigation.map(({ href, label, icon: Icon }) => {
             const active =
               href === "/admin"
                 ? pathname === href || pathname.startsWith("/admin/category/")
                 : pathname === href;
             return (
-              <Button
+              <Link
                 key={href}
-                variant={active ? "secondary" : "ghost"}
-                asChild
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={`flex min-h-12 min-w-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-colors ${active ? "border-[var(--admin-accent)] text-[var(--admin-accent)]" : "border-transparent text-muted-foreground hover:border-slate-300 hover:text-foreground"}`}
               >
-                <Link href={href} aria-current={active ? "page" : undefined}>
-                  {label}
-                </Link>
-              </Button>
+                <Icon className="hidden size-4 sm:block" aria-hidden="true" />
+                {label}
+              </Link>
             );
           })}
         </nav>
       </header>
-      <main id="admin-content" className="py-6 md:py-10" tabIndex={-1}>
+      <main
+        id="admin-content"
+        tabIndex={-1}
+        className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-10"
+      >
         {children}
       </main>
     </div>

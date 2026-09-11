@@ -1,6 +1,6 @@
 "use client";
 
-import { FormInput } from "@/components/form/formInput";
+import { FormArea } from "@/components/form/formArea";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,166 +14,225 @@ import {
 } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { config } from "@/config/config";
-import { cn } from "@/lib/utils";
 import { useDeleteImage, useUpdateImageDescription } from "@/queries/useImage";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Image as ImageType } from "@repo/types/entities";
+import { ArrowDown, ArrowUp, GripVertical, Pencil, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 
-const formSchema = z.object({
-  description: z.string().trim(),
-});
+const schema = z.object({ description: z.string() });
 
-type FormSchema = z.infer<typeof formSchema>;
-
-const ImageContainer = ({ image }: { image: ImageType }) => {
+export default function ImageContainer({
+  image,
+  position,
+  count,
+  onMove,
+  ordering,
+}: {
+  image: ImageType;
+  position: number;
+  count: number;
+  onMove: (direction: -1 | 1) => void;
+  ordering: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [ratio, setRatio] = useState<number>(1);
-  const imageRef = useRef<HTMLImageElement | null>(null);
-  const calculRatio = () => {
-    if (
-      imageRef.current?.height &&
-      imageRef.current?.width &&
-      imageRef.current.height > imageRef.current.width
-    ) {
-      setRatio(2);
-    } else {
-      setRatio(1);
-    }
-  };
-
-  const form = useForm<FormSchema>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      description: image.description || "",
-    },
+  const [imageFailed, setImageFailed] = useState(false);
+  const update = useUpdateImageDescription();
+  const remove = useDeleteImage();
+  const pending = update.isPending || remove.isPending;
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: { description: image.description || "" },
   });
-
-  const { mutate: updateImageDescription, isPending: isSaving } =
-    useUpdateImageDescription();
-  const { mutate: deleteImage, isPending: isDeleting } = useDeleteImage();
-  const busy = isSaving || isDeleting;
-
-  const onSubmit = async () => {
-    updateImageDescription(
-      {
-        imageId: image.id,
-        description: form.getValues("description"),
-      },
-      {
-        onSuccess: () => {
-          form.reset(form.getValues());
-          setOpen(false);
-        },
-      },
-    );
-  };
-
-  const onDelete = async () => {
-    deleteImage(image.id, { onSuccess: () => setOpen(false) });
-  };
-
   return (
-    <div
-      className={cn("relative", {
-        "row-span-2": ratio === 2,
-      })}
-    >
-      <Image
-        src={`${config.IMAGE_URL}/image/${image.id}`}
-        alt={image.description || image.name}
-        width={500}
-        height={325}
-        ref={imageRef}
-        onLoad={calculRatio}
-        sizes="(max-width: 768px) 45vw, 350px"
-        className="w-full h-auto cursor-grab"
-      />
-      <div className="py-3">
-        <p className="text-sm text-gray-600 truncate mb-2">
-          {image.description || "Sans légende"}
+    <article className="min-w-0 overflow-hidden rounded-xl border bg-white">
+      <div className="relative flex aspect-[4/3] items-center justify-center bg-slate-100">
+        {imageFailed ? (
+          <p className="p-4 text-center text-sm text-muted-foreground">
+            Aperçu indisponible
+          </p>
+        ) : (
+          <Image
+            src={`${config.IMAGE_URL}/image/${image.id}`}
+            alt={image.description || image.name}
+            fill
+            sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 33vw"
+            className="object-contain"
+            onError={() => setImageFailed(true)}
+          />
+        )}
+        <span className="absolute top-2 left-2 rounded bg-white px-2 py-1 text-xs font-medium tabular-nums">
+          {position + 1} / {count}
+        </span>
+      </div>
+      <div className="p-3">
+        <p className="truncate text-sm font-medium" title={image.name}>
+          {image.name}
         </p>
-        <Dialog
-          open={open}
-          onOpenChange={(value) => {
-            if (!busy) {
+        <p
+          className="mt-1 truncate text-xs text-muted-foreground"
+          title={image.description}
+        >
+          {image.description || "Aucune description"}
+        </p>
+        <div className="mt-3 flex items-center justify-between gap-1">
+          <span
+            className={`drag-handle flex size-11 shrink-0 items-center justify-center text-muted-foreground ${ordering ? "pointer-events-none" : ""}`}
+            aria-hidden="true"
+          >
+            <GripVertical className="size-5" />
+          </span>
+          <div className="flex">
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={ordering || position === 0}
+              aria-label={`Avancer ${image.name}`}
+              title="Avancer dans la galerie"
+              onClick={() => onMove(-1)}
+            >
+              <ArrowUp className="size-4" aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={ordering || position === count - 1}
+              aria-label={`Reculer ${image.name}`}
+              title="Reculer dans la galerie"
+              onClick={() => onMove(1)}
+            >
+              <ArrowDown className="size-4" aria-hidden="true" />
+            </Button>
+          </div>
+          <Dialog
+            open={open}
+            onOpenChange={(value) => {
+              if (pending) return;
               setOpen(value);
               setConfirmDelete(false);
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              Modifier<span className="sr-only"> {image.name}</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>
-                {confirmDelete
-                  ? "Supprimer cette photographie ?"
-                  : "Modifier la photographie"}
-              </DialogTitle>
-            </DialogHeader>
-            <DialogDescription>
-              {confirmDelete
-                ? "Cette suppression est définitive."
-                : "La légende décrit la photographie pour les visiteurs et les moteurs de recherche."}
-            </DialogDescription>
-            <Form {...form}>
-              <form
-                id={`edit-image-${image.id}`}
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="w-full px-4"
-              >
-                <FormInput
-                  name="description"
-                  label="Légende"
-                  placeholder="Décrivez le sujet, le lieu et le contexte"
-                  disabled={busy || confirmDelete}
-                />
-              </form>
-            </Form>
-            <DialogFooter>
+              update.reset();
+              remove.reset();
+              form.reset({ description: image.description || "" });
+            }}
+          >
+            <DialogTrigger asChild>
               <Button
-                variant="destructive"
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  confirmDelete ? onDelete() : setConfirmDelete(true)
-                }
+                variant="outline"
+                disabled={ordering}
+                aria-label={`Modifier l’image ${image.name}`}
               >
-                {isDeleting
-                  ? "Suppression…"
-                  : confirmDelete
-                    ? "Supprimer définitivement"
-                    : "Supprimer la photographie"}
+                <Pencil className="size-4" aria-hidden="true" />
+                Modifier
               </Button>
-              <DialogClose asChild>
-                <Button type="button" variant="outline" disabled={busy}>
-                  Annuler
-                </Button>
-              </DialogClose>
-              {!confirmDelete && (
-                <Button
-                  type="submit"
-                  form={`edit-image-${image.id}`}
-                  disabled={busy || !form.formState.isDirty}
-                  className="bg-gray-950 text-white hover:bg-gray-800"
-                >
-                  {isSaving ? "Enregistrement…" : "Enregistrer"}
-                </Button>
+            </DialogTrigger>
+            <DialogContent
+              closeLabel="Fermer"
+              className="admin-ui admin-dialog"
+              showCloseButton={!pending}
+            >
+              <DialogHeader>
+                <DialogTitle>
+                  {confirmDelete
+                    ? "Supprimer cette image ?"
+                    : "Modifier l’image"}
+                </DialogTitle>
+                <DialogDescription className="break-words">
+                  {confirmDelete
+                    ? `L’image « ${image.name} » sera supprimée définitivement du reportage.`
+                    : image.name}
+                </DialogDescription>
+              </DialogHeader>
+              {confirmDelete ? (
+                <>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    Cette action ne peut pas être annulée.
+                  </p>
+                  {remove.isError && (
+                    <p role="alert" className="text-sm text-red-700">
+                      La suppression a échoué. Réessayez.
+                    </p>
+                  )}
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      disabled={pending}
+                      onClick={() => setConfirmDelete(false)}
+                    >
+                      Conserver l’image
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      disabled={pending}
+                      onClick={() =>
+                        remove.mutate(image.id, {
+                          onSuccess: () => setOpen(false),
+                        })
+                      }
+                    >
+                      {pending ? "Suppression…" : "Supprimer définitivement"}
+                    </Button>
+                  </DialogFooter>
+                </>
+              ) : (
+                <Form {...form}>
+                  <form
+                    className="space-y-5"
+                    onSubmit={form.handleSubmit((values) =>
+                      update.mutate(
+                        { imageId: image.id, description: values.description },
+                        { onSuccess: () => setOpen(false) },
+                      ),
+                    )}
+                  >
+                    <FormArea
+                      name="description"
+                      label="Description de l’image"
+                      description="Décrivez le sujet et le contexte de la photographie."
+                      className="min-h-32"
+                      disabled={pending}
+                    />
+                    {update.isError && (
+                      <p role="alert" className="text-sm text-red-700">
+                        La description n’a pas été enregistrée. Réessayez.
+                      </p>
+                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+                      <Button
+                        variant="ghost"
+                        className="text-red-700 hover:bg-red-50 hover:text-red-800"
+                        type="button"
+                        disabled={pending}
+                        onClick={() => setConfirmDelete(true)}
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                        Supprimer
+                      </Button>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button
+                            variant="outline"
+                            type="button"
+                            disabled={pending}
+                          >
+                            Annuler
+                          </Button>
+                        </DialogClose>
+                        <Button type="submit" disabled={pending}>
+                          {pending ? "Enregistrement…" : "Enregistrer"}
+                        </Button>
+                      </DialogFooter>
+                    </div>
+                  </form>
+                </Form>
               )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
-    </div>
+    </article>
   );
-};
-
-export default ImageContainer;
+}

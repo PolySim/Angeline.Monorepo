@@ -46,14 +46,14 @@ export default function DownloadCategoryButton() {
       onClick={handleDownload}
       disabled={isDownloading || !pageId}
       variant="outline"
-      className="w-fit"
+      className="w-fit shrink-0"
     >
       {isDownloading ? (
-        <Loader2 className="size-4 animate-spin mr-2" />
+        <Loader2 className="size-4 animate-spin" />
       ) : (
-        <Download className="size-4 mr-2" />
+        <Download className="size-4" />
       )}
-      {isDownloading ? "Téléchargement..." : "Télécharger toutes les images"}
+      {isDownloading ? "Téléchargement..." : "Télécharger les images"}
     </Button>
   );
 }

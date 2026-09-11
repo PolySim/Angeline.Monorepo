@@ -40,7 +40,11 @@ export const useCategoryById = () => {
 
   return useQuery({
     queryKey: ["category", pageId],
-    queryFn: () => getCategoryById(pageId),
+    queryFn: async () => {
+      const category = await getCategoryById(pageId);
+      if (!category?.id) throw new Error("Reportage introuvable");
+      return category;
+    },
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     staleTime: 1000 * 60 * 5,
@@ -165,7 +169,7 @@ export const useUpdateCategory = () => {
   return useMutation({
     mutationFn: ({ content }: { content: Partial<Category> }) =>
       updateCategory({ categoryId, content }),
-    onMutate: (categoryId) => {
+    onMutate: () => {
       queryClient.cancelQueries({ queryKey: ["category", categoryId] });
     },
     onSuccess: (res) => {

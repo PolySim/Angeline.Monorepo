@@ -16,7 +16,8 @@ import {
 import { Form } from "@/components/ui/form";
 import { useCreateCategory } from "@/queries/useCategory";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 
@@ -26,67 +27,94 @@ const formSchema = z.object({
 });
 
 export default function CreateCategory() {
+  const [open, setOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      article: "",
-    },
+    defaultValues: { name: "", article: "" },
   });
   const { mutate: createCategory, isPending } = useCreateCategory();
-
   return (
-    <Dialog onOpenChange={(open) => !open && form.reset()}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (isPending) return;
+        setOpen(value);
+        if (!value) {
+          form.reset();
+          setFailed(false);
+        }
+      }}
+    >
       <DialogTrigger asChild>
-        <Button size="lg" className="font-bold">
+        <Button>
+          <Plus className="size-4" aria-hidden="true" />
           Créer un reportage
         </Button>
       </DialogTrigger>
-      <DialogContent className="w-11/12 max-w-6xl">
+      <DialogContent
+        closeLabel="Fermer"
+        className="admin-ui admin-dialog"
+        showCloseButton={!isPending}
+      >
         <DialogHeader>
           <DialogTitle>Créer un reportage</DialogTitle>
           <DialogDescription>
-            Donnez un nom à votre série, puis ajoutez ses photographies.
+            Ajoutez un titre. Vous pourrez ensuite compléter l’article et
+            importer vos images.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
-            id="create-report"
-            className="flex flex-col gap-4 w-full"
-            onSubmit={form.handleSubmit((data) => createCategory(data))}
+            className="space-y-5"
+            noValidate
+            onSubmit={form.handleSubmit((values) => {
+              setFailed(false);
+              createCategory(values, {
+                onSuccess: (result) => {
+                  if (result.success) {
+                    setOpen(false);
+                    form.reset();
+                  } else setFailed(true);
+                },
+                onError: () => setFailed(true),
+              });
+            })}
           >
-            <div className="w-full">
-              <FormInput
-                name="name"
-                label="Nom"
-                disabled={isPending}
-                required
-              />
-            </div>
-            <div className="w-full">
-              <FormArea
-                name="article"
-                label="Texte de présentation (facultatif)"
-                disabled={isPending}
-              />
-            </div>
+            <FormInput
+              name="name"
+              label="Nom"
+              placeholder="Nom du reportage"
+              disabled={isPending}
+              required
+            />
+            <FormArea
+              name="article"
+              label="Article (facultatif)"
+              className="min-h-36"
+              disabled={isPending}
+            />
+            {failed && (
+              <p role="alert" className="text-sm text-red-700">
+                Le reportage n’a pas été créé. Vos textes sont conservés ;
+                réessayez.
+              </p>
+            )}
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" disabled={isPending} variant="outline">
+                  Annuler
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={isPending}>
+                {isPending && (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                )}
+                {isPending ? "Création…" : "Créer"}
+              </Button>
+            </DialogFooter>
           </form>
         </Form>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button disabled={isPending} variant="outline">
-              Annuler
-            </Button>
-          </DialogClose>
-          <Button
-            type="submit"
-            form="create-report"
-            disabled={isPending}
-            className="bg-gray-950 text-white hover:bg-gray-800"
-          >
-            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Créer"}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

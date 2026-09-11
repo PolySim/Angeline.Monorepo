@@ -75,6 +75,9 @@ describe("Administration", () => {
     expect(
       screen.getByRole("link", { name: /Voir le site/ }).getAttribute("target"),
     ).toBe("_blank");
+    expect(
+      screen.getByRole("link", { name: "Page d’accueil" }).getAttribute("href"),
+    ).toBe("/admin/homepage");
     if (process.env.ADMIN_PREVIEW_HTML) {
       writeFileSync(
         process.env.ADMIN_PREVIEW_HTML,

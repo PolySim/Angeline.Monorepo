@@ -19,7 +19,7 @@ export const useImages = () => {
 
   return useQuery({
     queryKey: ["images", pageId],
-    queryFn: () => getImagesByCategoryId(pageId),
+    queryFn: () => getImagesByCategoryId(pageId, true),
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     staleTime: 1000 * 60 * 5,
@@ -82,8 +82,8 @@ export const useReorderImages = (props?: { onErrorCallback?: () => void }) => {
   const { pageId } = useAppParams();
   return useMutation({
     mutationFn: (imageIds: string[]) => reorderImages(pageId, imageIds),
-    onMutate: (imageIds) => {
-      queryClient.cancelQueries({ queryKey: ["images", pageId] });
+    onMutate: async (imageIds) => {
+      await queryClient.cancelQueries({ queryKey: ["images", pageId] });
       const previousImages = queryClient.getQueryData(["images", pageId]);
       queryClient.setQueryData(["images", pageId], (old: Image[]) =>
         old.map((image) =>
@@ -111,7 +111,7 @@ export const useReorderImages = (props?: { onErrorCallback?: () => void }) => {
       props?.onErrorCallback?.();
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["images", pageId] });
+      return queryClient.invalidateQueries({ queryKey: ["images", pageId] });
     },
   });
 };

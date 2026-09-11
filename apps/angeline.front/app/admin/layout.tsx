@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AdminShell from "./adminShell";
+import "./admin.css";
 
 export const metadata: Metadata = {
   title: "Administration",

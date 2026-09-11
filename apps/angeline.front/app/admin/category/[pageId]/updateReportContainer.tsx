@@ -2,48 +2,63 @@
 
 import { useCategoryById } from "@/queries/useCategory";
 import { useImages } from "@/queries/useImage";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AdminError, AdminLoading, AdminPageHeader } from "../../adminUi";
 import ReorderImage from "./reorderImage";
 import UpdateCategoryInformation from "./updateCategoryInformation";
+import AddImage from "./addImage";
+import DownloadCategoryButton from "./downloadCategoryButton";
 
 export default function UpdateReportContainer() {
-  const { isPending: isImagesPending } = useImages();
-  const {
-    data: category,
-    isPending: isCategoryPending,
-    isError,
-    refetch,
-  } = useCategoryById();
-
-  if (isError)
-    return (
-      <div role="alert" className="space-y-3">
-        <p>Impossible de charger ce reportage.</p>
-        <Button variant="outline" onClick={() => refetch()}>
-          Réessayer
-        </Button>
-      </div>
-    );
-  if (!isCategoryPending && !category)
-    return (
-      <p>
-        Ce reportage n’existe plus. Retrouvez les autres dans l’onglet
-        Reportages.
-      </p>
-    );
-
+  const category = useCategoryById();
+  const images = useImages();
   return (
     <>
-      {isImagesPending || isCategoryPending ? (
-        <div className="flex items-center justify-center flex-1">
-          <Loader2 className="size-10 animate-spin text-primary" />
-        </div>
+      <AdminPageHeader
+        title={category.data?.name || "Modifier le reportage"}
+        description="Complétez les informations du reportage et organisez ses images."
+        back
+      />
+      {category.isPending ? (
+        <AdminLoading label="Chargement du reportage…" />
+      ) : category.isError ? (
+        <AdminError
+          retry={() => void category.refetch()}
+          message="Impossible de charger ce reportage."
+        />
       ) : (
-        <>
-          <UpdateCategoryInformation />
-          <ReorderImage />
-        </>
+        <div className="space-y-8">
+          <section className="rounded-xl border bg-white p-5 sm:p-6">
+            <h2 className="mb-5 text-lg font-semibold">
+              Informations du reportage
+            </h2>
+            <UpdateCategoryInformation key={category.data.id} />
+          </section>
+          <section aria-labelledby="images-heading" className="space-y-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 id="images-heading" className="text-lg font-semibold">
+                  Images{images.data ? ` (${images.data.length})` : ""}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  Déplacez les images avec les poignées ou les flèches. L’ordre
+                  est enregistré automatiquement.
+                </p>
+              </div>
+              {!!images.data?.length && <DownloadCategoryButton />}
+            </div>
+            <AddImage />
+            {images.isPending ? (
+              <AdminLoading label="Chargement des images…" />
+            ) : images.isError ? (
+              <AdminError
+                retry={() => void images.refetch()}
+                message="Impossible de charger les images."
+              />
+            ) : (
+              <ReorderImage />
+            )}
+          </section>
+        </div>
       )}
     </>
   );

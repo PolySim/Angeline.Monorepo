@@ -12,39 +12,60 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useDeleteCategory } from "@/queries/useCategory";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-const DeleteCategory = ({
+export default function DeleteCategory({
   categoryId,
-  categoryName,
+  name,
 }: {
   categoryId: string;
-  categoryName: string;
-}) => {
+  name: string;
+}) {
   const [open, setOpen] = useState(false);
-  const { mutate: deleteCategory, isPending } = useDeleteCategory();
-
+  const {
+    mutate: deleteCategory,
+    isPending,
+    isError,
+    reset,
+  } = useDeleteCategory();
   return (
-    <Dialog open={open} onOpenChange={(value) => !isPending && setOpen(value)}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        if (!isPending) {
+          setOpen(value);
+          reset();
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
-          className="text-red-700 hover:bg-red-50"
-          aria-label={`Supprimer ${categoryName}`}
+          className="text-red-700 hover:bg-red-50 hover:text-red-800"
+          aria-label={`Supprimer ${name}`}
+          title={`Supprimer ${name}`}
         >
-          <Trash2 size={18} />
+          <Trash2 className="size-4" aria-hidden="true" />
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent
+        closeLabel="Fermer"
+        className="admin-ui admin-dialog"
+        showCloseButton={!isPending}
+      >
         <DialogHeader>
-          <DialogTitle>Supprimer le reportage</DialogTitle>
-          <DialogDescription>
-            « {categoryName} » et ses photographies seront supprimés. Cette
-            action est définitive.
+          <DialogTitle>Supprimer ce reportage ?</DialogTitle>
+          <DialogDescription className="break-words">
+            Le reportage « {name} » sera supprimé. Cette action est définitive.
           </DialogDescription>
         </DialogHeader>
+        {isError && (
+          <p role="alert" className="text-sm text-red-700">
+            La suppression a échoué. Réessayez.
+          </p>
+        )}
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline" disabled={isPending}>
@@ -58,12 +79,13 @@ const DeleteCategory = ({
               deleteCategory(categoryId, { onSuccess: () => setOpen(false) })
             }
           >
+            {isPending && (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            )}
             {isPending ? "Suppression…" : "Supprimer définitivement"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
-
-export default DeleteCategory;
+}

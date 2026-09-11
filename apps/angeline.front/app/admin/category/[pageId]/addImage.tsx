@@ -41,7 +41,7 @@ const AddImage = () => {
   };
 
   return (
-    <div className="w-full sm:w-auto sm:flex-1 max-w-lg">
+    <div className="w-full rounded-lg border border-dashed bg-white p-5">
       <label htmlFor="report-images" className="block text-sm font-medium mb-2">
         Ajouter des images
       </label>

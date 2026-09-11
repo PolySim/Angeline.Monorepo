@@ -1,59 +1,53 @@
 "use client";
 
-import useDebounce from "@/hook/useDebonce";
 import { useImages, useReorderImages } from "@/queries/useImage";
-import { useDragAndDrop } from "@formkit/drag-and-drop/react";
-import { Image as ImageType } from "@repo/types/entities";
-import { useEffect } from "react";
+import { useMemo } from "react";
+import { AdminEmpty, SaveStatus } from "../../adminUi";
+import { useAdminOrder } from "../../useAdminOrder";
 import ImageContainer from "./imageContainer";
 
-const ReorderImage = () => {
+export default function ReorderImage() {
   const { data: images } = useImages();
-  const [parent, imagesSorted, setImages] = useDragAndDrop<
-    HTMLDivElement,
-    ImageType
-  >(images || [], {
-    handleEnd: () => onEnd(imagesSorted),
-  });
-
-  useEffect(() => {
-    setImages(images || []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [images]);
-
-  const { mutate: reorderImages } = useReorderImages({
-    onErrorCallback: () => {
-      setImages(images || []);
-    },
-  });
-
-  const onReorder = (lastImages: ImageType[]) => {
-    if (lastImages.some((image, i) => image.id !== imagesSorted[i]?.id)) return;
-    reorderImages(lastImages.map((image) => image.id));
-  };
-
-  const onEnd = useDebounce(onReorder, 500);
-
+  const items = useMemo(
+    () => [...(images || [])].sort((a, b) => a.ordered - b.ordered),
+    [images],
+  );
+  const { mutateAsync } = useReorderImages();
+  const { parent, values, move, pending, error, saved } = useAdminOrder(
+    items,
+    (values) => mutateAsync(values.map((image) => image.id)),
+  );
   return (
-    <section className="mt-6 border-t pt-6">
-      <h2 className="px-4 text-lg font-semibold">
-        Photographies · {imagesSorted.length}
-      </h2>
-      <p className="px-4 mt-2 text-sm text-gray-600">
-        {imagesSorted.length
-          ? "Glissez les photographies pour changer leur ordre. L’ordre est enregistré automatiquement."
-          : "Utilisez « Ajouter des images » pour compléter ce reportage."}
-      </p>
+    <div className="space-y-4">
+      <SaveStatus pending={pending} error={error} saved={saved} />
+      {!values.length && (
+        <AdminEmpty title="Ce reportage n’a pas encore d’images">
+          Ajoutez vos premières photographies avec le sélecteur ci-dessus. Vous
+          pourrez ensuite modifier leurs descriptions et leur ordre.
+        </AdminEmpty>
+      )}
       <div
-        className="grid grid-cols-2 gap-4 md:grid-cols-3 justify-center items-stretch w-full max-w-6xl mx-auto p-4"
         ref={parent}
+        className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        aria-busy={pending}
+        aria-label="Images dans l’ordre d’affichage"
       >
-        {imagesSorted.map((image) => (
-          <ImageContainer key={image.id} image={image} />
+        {values.map((image, index) => (
+          <ImageContainer
+            key={image.id}
+            image={image}
+            position={index}
+            count={values.length}
+            onMove={(direction) => move(index, direction)}
+            ordering={pending}
+          />
         ))}
       </div>
-    </section>
+      {error && (
+        <p role="alert" className="text-sm text-red-700">
+          L’ordre précédent a été restauré. Réessayez le déplacement.
+        </p>
+      )}
+    </div>
   );
-};
-
-export default ReorderImage;
+}

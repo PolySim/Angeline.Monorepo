@@ -26,7 +26,7 @@ const BiographyForm = ({ information }: { information: Information }) => {
   return (
     <Form {...form}>
       <form
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-4 rounded-xl border bg-white p-5 sm:p-6"
         onSubmit={form.handleSubmit((data) =>
           updateBiography(
             { lang: information.lang, content: data.content },
@@ -65,7 +65,7 @@ const BiographyForm = ({ information }: { information: Information }) => {
 export default function AboutForm() {
   const { data: biography = [] } = useBiography();
   return (
-    <div className="space-y-10">
+    <div className="grid gap-6 lg:grid-cols-2">
       {biography.map((information) => (
         <BiographyForm key={information.id} information={information} />
       ))}

@@ -18,6 +18,7 @@ export default function OrderForm() {
 
   const [parent, tapes, setValue] = useDragAndDrop<HTMLDivElement, Category>(
     categoriesFiltered,
+    { dragHandle: ".drag-handle" },
   );
 
   const move = (index: number, offset: number) => {
@@ -46,7 +47,7 @@ export default function OrderForm() {
           >
             <GripVertical
               aria-hidden="true"
-              className="shrink-0 text-gray-400"
+              className="drag-handle shrink-0 text-gray-400"
             />
             <h2 className="flex-1 min-w-0 break-words font-medium">
               {tape.name}

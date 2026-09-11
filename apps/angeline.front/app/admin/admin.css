@@ -1,0 +1,80 @@
+/* Admin-only tokens also apply to portalled dialogs. */
+.admin-ui {
+  --admin-accent: #256668;
+  --admin-accent-soft: #e9f4f3;
+  --admin-muted: #586567;
+  --color-primary: var(--admin-accent);
+  --primary-foreground: #ffffff;
+  --muted-foreground: var(--admin-muted);
+  --ring: var(--admin-accent);
+  color: #202c2d;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.admin-ui button,
+.admin-ui a[data-slot] {
+  min-height: 2.75rem;
+  box-shadow: none;
+  transition-property: color, background-color, border-color;
+}
+.admin-ui button:has(> svg:only-child),
+.admin-ui a[data-slot]:has(> svg:only-child) {
+  min-width: 2.75rem;
+}
+.admin-ui input:not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+.admin-ui select {
+  min-height: 2.75rem;
+}
+.admin-ui input,
+.admin-ui textarea,
+.admin-ui select {
+  background-color: white;
+  font-size: 1rem;
+}
+.admin-ui input::placeholder,
+.admin-ui textarea::placeholder {
+  color: #637173;
+}
+.admin-ui :is(a, button, input, textarea, select):focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 3px;
+}
+.admin-ui [data-slot="dialog-close"] {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: grid;
+  place-items: center;
+}
+.admin-dialog {
+  width: calc(100% - 2rem);
+  max-width: 36rem;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+.admin-ui .drag-handle {
+  touch-action: none;
+  cursor: grab;
+}
+.admin-ui .drag-handle:active {
+  cursor: grabbing;
+}
+.admin-ui .drag-handle:disabled {
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-ui *,
+  .admin-ui *::before,
+  .admin-ui *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.admin-ui .bg-primary {
+  background-color: var(--admin-accent);
+}
+.admin-ui .bg-primary:hover {
+  background-color: #1d5557;
+}

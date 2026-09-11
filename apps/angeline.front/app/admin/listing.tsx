@@ -2,12 +2,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useCategories } from "@/queries/useCategory";
+import { ArrowUpRight, Search } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import DeleteCategory from "./deleteCategory";
 import ToggleVisibilities from "./toggleVisibilities";
+import { AdminEmpty, AdminError, AdminLoading } from "./adminUi";
 
 export default function Listing() {
   const {
@@ -18,123 +19,113 @@ export default function Listing() {
   } = useCategories();
   const [search, setSearch] = useState("");
   const [visibility, setVisibility] = useState("all");
-  const filtered = categories.filter(
-    (category) =>
-      category.name
-        .toLocaleLowerCase("fr")
-        .includes(search.trim().toLocaleLowerCase("fr")) &&
-      (visibility === "all" || category.disabled === (visibility === "hidden")),
-  );
-
-  if (isPending)
-    return (
-      <div role="status" className="space-y-3">
-        <span className="sr-only">Chargement des reportages</span>
-        {[0, 1, 2].map((key) => (
-          <Skeleton key={key} className="h-20 w-full" />
-        ))}
-      </div>
+  if (isPending) return <AdminLoading label="Chargement des reportages…" />;
+  if (isError) return <AdminError retry={() => void refetch()} />;
+  const filtered = [...categories]
+    .sort((a, b) => a.ordered - b.ordered)
+    .filter(
+      (category) =>
+        category.name
+          .toLocaleLowerCase("fr")
+          .includes(search.trim().toLocaleLowerCase("fr")) &&
+        (visibility === "all" ||
+          (visibility === "hidden" ? category.disabled : !category.disabled)),
     );
-  if (isError)
-    return (
-      <div role="alert" className="space-y-3">
-        <p>Impossible de charger les reportages.</p>
-        <Button variant="outline" onClick={() => refetch()}>
-          Réessayer
-        </Button>
-      </div>
-    );
-
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-4">
-        <div className="flex-1">
-          <label
-            htmlFor="report-search"
-            className="block text-sm font-medium mb-2"
-          >
+    <section aria-label="Liste des reportages" className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search
+            className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <label htmlFor="report-search" className="sr-only">
             Rechercher un reportage
           </label>
           <Input
             id="report-search"
             type="search"
+            placeholder="Rechercher un reportage…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nom du reportage…"
-            className="bg-white"
+            className="pl-10"
           />
         </div>
-        <div>
-          <label
-            htmlFor="report-visibility"
-            className="block text-sm font-medium mb-2"
-          >
-            Visibilité
-          </label>
+        <label className="flex items-center gap-3 text-sm text-muted-foreground">
+          Visibilité
           <select
-            id="report-visibility"
             value={visibility}
             onChange={(e) => setVisibility(e.target.value)}
-            className="h-9 w-full rounded-md border bg-white px-3 text-sm"
+            className="rounded-md border px-3 text-foreground"
           >
-            <option value="all">Tous les reportages</option>
-            <option value="visible">Visibles sur le site</option>
+            <option value="all">Tous</option>
+            <option value="visible">Visibles</option>
             <option value="hidden">Masqués</option>
           </select>
-        </div>
+        </label>
       </div>
-      <p role="status" className="text-sm text-gray-600 mb-3">
-        {filtered.length} reportage{filtered.length > 1 ? "s" : ""} sur{" "}
-        {categories.length}
+      <p role="status" className="text-sm text-muted-foreground">
+        {filtered.length} reportage{filtered.length > 1 ? "s" : ""}
+        {filtered.length !== categories.length
+          ? ` sur ${categories.length}`
+          : ""}
       </p>
-      {filtered.length === 0 ? (
-        <div className="py-12 text-center border rounded-lg bg-white">
-          <h2 className="font-semibold">
-            {categories.length ? "Aucun résultat" : "Votre premier reportage"}
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {categories.length
-              ? "Essayez un autre nom ou retirez le filtre."
-              : "Utilisez « Créer un reportage » pour ajouter une série."}
-          </p>
-          {categories.length > 0 && (
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => {
-                setSearch("");
-                setVisibility("all");
-              }}
-            >
-              Effacer les filtres
-            </Button>
-          )}
-        </div>
+      {!categories.length ? (
+        <AdminEmpty title="Votre premier reportage commence ici">
+          Utilisez « Créer un reportage » pour ajouter un titre, un article et
+          vos images.
+        </AdminEmpty>
+      ) : !filtered.length ? (
+        <AdminEmpty title="Aucun résultat">
+          <p>Essayez un autre nom ou affichez toutes les visibilités.</p>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => {
+              setSearch("");
+              setVisibility("all");
+            }}
+          >
+            Effacer les filtres
+          </Button>
+        </AdminEmpty>
       ) : (
-        <ul className="divide-y rounded-lg border bg-white">
+        <ul className="divide-y overflow-hidden rounded-xl border bg-white">
           {filtered.map((category) => (
             <li
               key={category.id}
-              className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5"
             >
-              <div className="min-w-0">
-                <Link
-                  href={`/admin/category/${category.id}`}
-                  className="font-semibold break-words hover:underline underline-offset-4"
-                >
-                  {category.name}
-                </Link>
-                <p className="mt-1 text-sm text-gray-600">
-                  {category.disabled
-                    ? "Masqué sur le site"
-                    : "Visible sur le site"}
-                  {category.ordered <= 3 && " · Rubrique permanente"}
-                </p>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <h2 className="min-w-0 text-base font-semibold break-words">
+                    <Link
+                      href={`/admin/category/${category.id}`}
+                      className="hover:underline"
+                    >
+                      {category.name}
+                    </Link>
+                  </h2>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${category.disabled ? "bg-slate-100 text-slate-600" : "bg-[var(--admin-accent-soft)] text-[var(--admin-accent)]"}`}
+                  >
+                    {category.disabled ? "Masqué" : "Visible"}
+                  </span>
+                </div>
+                {category.ordered <= 3 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Rubrique permanente du portfolio
+                  </p>
+                )}
               </div>
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <div className="flex shrink-0 items-center justify-end gap-1">
                 <Button variant="outline" asChild>
-                  <Link href={`/admin/category/${category.id}`}>
-                    Modifier<span className="sr-only"> {category.name}</span>
+                  <Link
+                    href={`/admin/category/${category.id}`}
+                    aria-label={`Modifier ${category.name}`}
+                  >
+                    Modifier
+                    <ArrowUpRight className="size-4" aria-hidden="true" />
                   </Link>
                 </Button>
                 {category.ordered > 3 && (
@@ -142,10 +133,11 @@ export default function Listing() {
                     <ToggleVisibilities
                       categoryId={category.id}
                       disabled={category.disabled}
+                      name={category.name}
                     />
                     <DeleteCategory
                       categoryId={category.id}
-                      categoryName={category.name}
+                      name={category.name}
                     />
                   </>
                 )}
@@ -154,6 +146,6 @@ export default function Listing() {
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }
