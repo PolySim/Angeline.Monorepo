@@ -1,41 +1,62 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import "../admin/admin.css";
 
 export const metadata: Metadata = {
-  title: "Connexion | Angeline",
-  description: "",
+  title: "Connexion à l’administration",
   robots: {
     index: false,
     follow: false,
-    googleBot: {
-      index: false,
-      follow: false,
-    },
+    googleBot: { index: false, follow: false },
   },
 };
 
 export default function SignInLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="flex-1 w-full px-4 lg:px-12 flex flex-col items-center justify-center">
-      <div className="flex rounded-lg overflow-hidden items-center justify-center w-full max-w-7xl h-[min(90vh,720px)]">
-        <div className="h-[100%] my-auto hidden lg:flex flex-col flex-1 relative">
-          <Image
-            src="/fond_ecran.png"
-            alt="Login image"
-            width={1920}
-            height={1440}
-            className="absolute top-0 left-0 z-0 object-cover w-full h-full"
-          />
-          <span className="absolute top-0 left-0 z-10 object-cover w-full h-full bg-black/10" />
+    <div className="admin-ui flex min-h-screen flex-1 flex-col bg-[#f6f8f8]">
+      <header className="border-b bg-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-8">
+          <Link href="/" className="min-w-0">
+            <span className="block text-base font-semibold">
+              Angeline Desdevises
+            </span>
+            <span className="text-sm text-muted-foreground">
+              Administration
+            </span>
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Retour au site
+          </Link>
         </div>
-        <div className="flex flex-col justify-center gap-6 px-4 lg:px-12 bg-primary/20 w-[min(500px,100%)] h-[100%] min-h-[min(90vh,500px)] rounded-xl lg:rounded-none">
-          {children}
+      </header>
+      <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-4 py-8 sm:px-8 sm:py-12">
+        <div className="grid w-full overflow-hidden rounded-xl border bg-white lg:grid-cols-2">
+          <div
+            className="relative hidden min-h-[36rem] lg:block"
+            aria-hidden="true"
+          >
+            <Image
+              src="/fond_ecran.png"
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 1152px) 544px, 50vw"
+              className="object-cover"
+            />
+          </div>
+          <div className="flex min-w-0 flex-col justify-center px-6 py-10 sm:p-10 lg:px-12 lg:py-14">
+            <div className="mx-auto w-full max-w-sm">{children}</div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
