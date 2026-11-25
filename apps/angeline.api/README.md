@@ -184,6 +184,30 @@ L'API utilise trois entités principales :
 - `PUT /image/reorder/:categoryId` - Réorganiser les images d'une catégorie
 - `DELETE /image/:id` - Supprimer une image
 
+#### Variantes WebP v1
+
+`GET /image/:id/variant/v1/:width` accepte un UUID et exactement `384`, `640`, `1080` ou `1600` (largeur en pixels après orientation EXIF). L'API ne génère pas de variante plus large que l'original orienté, ni de variante si l'original enregistré contient plusieurs images. Une variante peut donc manquer : sur `404`, utiliser `GET /image/:id`. Les réponses WebP sont immuables (`max-age=31536000`) et portent `X-Robots-Tag: noindex`; les erreurs ne sont pas mises en cache. `GET /image/:id/blur` sert le flou pré-calculé, sinon un flou historique déjà présent sur disque, sinon `404` (sans télécharger l’original comme miniature). Aucune conversion ne s'effectue pendant ces lectures.
+
+Les imports multipart et par morceaux préparent les fichiers dans `IMAGE_PATH/image-variants/v1/<uuid>/`. Le lot n'est rendu visible qu'après écriture complète. Un échec de préparation ne fait pas échouer un import original déjà enregistré. Deux imports sont traités en parallèle par processus, avec huit places d'attente et une limite de 64 millions de pixels par décodage. Le multipart historique accepte jusqu'à 10 fichiers de 20 Mio chacun; l'import par morceaux accepte 100 Mio par fichier, 32 sessions et des morceaux de 64 Kio à 1 Mio (512 Kio par défaut).
+
+Comme pour l'original, la désactivation d'une catégorie ne rend pas une image connue par UUID privée. Une suppression individuelle nettoie le lot v1. La suppression d'une catégorie supprime actuellement les lignes en cascade mais laisse les fichiers sur disque : pour ne pas les rendre accessibles après suppression, l'API vérifie encore la ligne et sa référence source lorsqu'un WebP existe. Ne pas exposer le répertoire v1 comme répertoire statique. Une réponse déjà mise en cache avant suppression ne peut pas être révoquée par l'API.
+
+#### Backfill local et borné
+
+Depuis la racine, créer un bac à sable sous le dossier temporaire du système et y placer uniquement une base SQLite de test ou un instantané SQLite local **cohérent**, ainsi qu'une copie des originaux (`images/img/...`). Ne jamais lancer le backfill sur une base ou un volume partagés, ni en production.
+
+```bash
+sandbox=$(mktemp -d "${TMPDIR:-/tmp}/angeline-image-backfill-XXXXXX")
+# Préparer $sandbox/fixture.sqlite et $sandbox/images/img/ avant de lancer :
+pnpm --filter angeline.api build
+DATABASE_PATH="$sandbox/fixture.sqlite" IMAGE_PATH="$sandbox/images" \
+  pnpm --filter angeline.api run image:backfill --sandbox "$sandbox" --limit 100
+```
+
+La CLI lit la base en lecture seule et traite une ligne à la fois, dans l'ordre des IDs. Relancer avec `--after <nextAfter>` jusqu'à `nextAfter: null`; la taille de page est de 1 à 500. Les lots v1 complets sont ignorés et jamais réécrits. Le code de sortie est `2` si une ligne a échoué et `1` si la commande a refusé de démarrer. Un lot existant dont la référence source a changé est signalé séparément et laissé intact, pour ne pas réutiliser une URL immuable avec de nouveaux octets.
+
+Pour une migration, déployer l’API avant le frontend et préparer les lots à partir d’un instantané cohérent. Après vérification, transférer uniquement les répertoires v1 complets vers le volume persistant de l’API, sans écraser les lots existants ni exposer publiquement ce répertoire. Les photos pas encore migrées gardent le chemin de repli Next.js, puis leur original.
+
 ## Exemples d'utilisation
 
 ### Créer une catégorie

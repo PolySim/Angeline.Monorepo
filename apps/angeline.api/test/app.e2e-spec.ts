@@ -4,6 +4,10 @@ import * as request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
+jest.mock('../src/config/config', () => ({
+  config: { database_path: ':memory:' },
+}));
+
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
@@ -14,6 +18,10 @@ describe('AppController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+  });
+
+  afterEach(async () => {
+    await app?.close();
   });
 
   it('/ (GET)', () => {

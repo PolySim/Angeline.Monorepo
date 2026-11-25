@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -14,14 +15,19 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
-import { File } from 'multer';
-import { AuthGuard } from 'src/middleware/AuthGuard';
+import { AuthGuard } from '../middleware/AuthGuard';
+import {
+  CHUNK_LIMIT,
+  ImageUpload,
+  LEGACY_IMAGE_LIMITS,
+} from '../repositories/image.repository';
+import { isMissingFile } from '../services/image-variants';
 import {
   ChunkStatusDto,
   ChunkUploadDto,
   CompleteUploadDto,
   InitiateUploadDto,
-} from 'src/types/chunk.dto';
+} from '../types/chunk.dto';
 import { ImageService } from '../services/image.service';
 import { UpdateImageDto } from '../types';
 
@@ -36,19 +42,51 @@ export class ImageController {
 
   @Get(':id')
   async sendImage(@Param('id') id: string, @Res() res: Response) {
-    return res.sendFile(await this.imageService.sendImage(id));
+    return this.sendFile(res, await this.imageService.sendImage(id));
   }
 
   @Get(':id/blur')
   async sendImageBlur(@Param('id') id: string, @Res() res: Response) {
-    return res.sendFile(await this.imageService.sendImageBlur(id));
+    return this.sendFile(res, await this.imageService.sendImageBlur(id));
+  }
+
+  @Get(':id/variant/v1/:width')
+  async sendImageVariant(
+    @Param('id') id: string,
+    @Param('width') width: string,
+    @Res() res: Response,
+  ) {
+    res.setHeader('X-Robots-Tag', 'noindex');
+    res.setHeader('Cache-Control', 'no-store');
+    const filename = await this.imageService.sendImageVariant(id, width);
+    res.removeHeader('Cache-Control');
+    await this.sendFile(res, filename, { immutable: true, maxAge: '365d' });
+  }
+
+  private sendFile(
+    res: Response,
+    filename: string,
+    options: Parameters<Response['sendFile']>[1] = {},
+  ) {
+    return new Promise<void>((resolve, reject) => {
+      res.sendFile(filename, options, (error) => {
+        if (!error || res.headersSent || res.destroyed) return resolve();
+        res.setHeader('Cache-Control', 'no-store');
+        if (isMissingFile(error)) return reject(new NotFoundException());
+        reject(error);
+      });
+    });
   }
 
   @UseGuards(AuthGuard)
   @Post(':pageId')
-  @UseInterceptors(FilesInterceptor('images'))
+  @UseInterceptors(
+    FilesInterceptor('images', LEGACY_IMAGE_LIMITS.files, {
+      limits: LEGACY_IMAGE_LIMITS,
+    }),
+  )
   async create(
-    @UploadedFiles() files: File[],
+    @UploadedFiles() files: ImageUpload[],
     @Param('pageId') pageId: string,
   ) {
     return this.imageService.create(pageId, files);
@@ -85,9 +123,11 @@ export class ImageController {
 
   @Post('chunk/upload')
   @UseGuards(AuthGuard)
-  @UseInterceptors(FileInterceptor('chunk'))
+  @UseInterceptors(
+    FileInterceptor('chunk', { limits: { fileSize: CHUNK_LIMIT } }),
+  )
   uploadChunk(
-    @UploadedFile() chunk: File,
+    @UploadedFile() chunk: ImageUpload,
     @Body() chunkUploadDto: ChunkUploadDto,
   ) {
     return this.imageService.uploadChunk(chunk, chunkUploadDto);

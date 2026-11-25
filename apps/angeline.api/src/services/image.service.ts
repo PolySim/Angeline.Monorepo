@@ -1,12 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { File } from 'multer';
 import {
   ChunkStatusDto,
   ChunkUploadDto,
   CompleteUploadDto,
   InitiateUploadDto,
-} from 'src/types/chunk.dto';
-import { ImageRepository } from '../repositories/image.repository';
+} from '../types/chunk.dto';
+import { ImageRepository, ImageUpload } from '../repositories/image.repository';
 import { Image, UpdateImageDto } from '../types';
 
 @Injectable()
@@ -28,11 +27,15 @@ export class ImageService {
     return this.imageRepository.sendImage(id);
   }
 
+  async sendImageVariant(id: string, width: string): Promise<string> {
+    return this.imageRepository.sendImageVariant(id, width);
+  }
+
   async sendImageBlur(id: string): Promise<string> {
     return this.imageRepository.sendImageBlur(id);
   }
 
-  async create(pageId: string, files: File[]): Promise<Image[]> {
+  async create(pageId: string, files: ImageUpload[]): Promise<Image[]> {
     return this.imageRepository.createImage(pageId, files);
   }
 
@@ -56,7 +59,7 @@ export class ImageService {
     return this.imageRepository.initiateChunkUpload(initiateUploadDto);
   }
 
-  uploadChunk(chunk: File, chunkUploadDto: ChunkUploadDto) {
+  uploadChunk(chunk: ImageUpload, chunkUploadDto: ChunkUploadDto) {
     return this.imageRepository.uploadChunk(chunk, chunkUploadDto);
   }
 

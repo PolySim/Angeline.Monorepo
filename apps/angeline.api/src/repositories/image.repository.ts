@@ -1,48 +1,123 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
+  OnModuleDestroy,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import * as archiver from 'archiver';
-import { File } from 'multer';
 import * as fs from 'node:fs';
+import { mkdir, mkdtemp, rename, rm, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import * as sharp from 'sharp';
-import { config } from 'src/config/config';
+import { DataSource, Repository } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
+import { config } from '../config/config';
+import { Image } from '../entities/image.entity';
+import {
+  generateImageVariants,
+  imageOriginalPath,
+  imageVariantDirectory,
+  isImageSegment,
+  isImageUuid,
+  isMissingFile,
+  isRegularFile,
+  isVariantWidth,
+  MAX_IMAGE_PIXELS,
+  removeImageVariants,
+  variantMatchesSource,
+} from '../services/image-variants';
+import { UpdateImageDto } from '../types';
 import {
   ChunkStatusDto,
   ChunkUploadDto,
   CompleteUploadDto,
   InitiateUploadDto,
-} from 'src/types/chunk.dto';
-import { DataSource, Repository } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
-import { Image } from '../entities/image.entity';
-import { UpdateImageDto } from '../types';
+} from '../types/chunk.dto';
+
+const MIB = 1024 * 1024;
+export const LEGACY_IMAGE_LIMITS = { files: 10, fileSize: 20 * MIB };
+export const CHUNK_LIMIT = MIB;
+const MAX_CHUNKED_IMAGE_BYTES = 100 * MIB;
+const MAX_CHUNK_SESSIONS = 32;
+const MAX_IMPORTS = 2;
+const MAX_WAITING_IMPORTS = 8;
+const SAFE_UPLOAD_KEY = /^[a-zA-Z0-9_-]{1,128}$/;
+
+export interface ImageUpload {
+  originalname: string;
+  buffer: Buffer;
+}
+
+function validateCategory(category: string) {
+  if (!isImageSegment(category) || category.toLowerCase() === 'temp') {
+    throw new BadRequestException('Catégorie invalide');
+  }
+}
+
+function importPath(id: string, name: string) {
+  const ext = typeof name === 'string' && name.split('.').pop();
+  if (!ext || !/^[a-zA-Z0-9]{1,10}$/.test(ext)) {
+    throw new BadRequestException('Extension de fichier invalide');
+  }
+  return `${id}.${ext}`;
+}
 
 interface ChunkUploadSession {
-  fileHash: string;
   fileName: string;
   category: string;
   totalChunks: number;
   fileSize: number;
+  chunkSize: number;
   uploadedChunks: Set<number>;
-  chunkPaths: Map<number | string, string>;
+  chunkPaths: Map<number, string>;
   createdAt: Date;
+  completing: boolean;
 }
 
 @Injectable()
-export class ImageRepository extends Repository<Image> {
-  private uploadSessions: Map<string, ChunkUploadSession> = new Map();
+export class ImageRepository
+  extends Repository<Image>
+  implements OnModuleDestroy
+{
+  private readonly logger = new Logger(ImageRepository.name);
+  private readonly uploadSessions = new Map<string, ChunkUploadSession>();
+  private readonly cleanupTimer = setInterval(
+    () => this.cleanupExpiredSessions(),
+    60 * 60 * 1000,
+  ).unref();
+  private readonly importWaiters: Array<() => void> = [];
+  private activeImports = 0;
 
-  constructor(private dataSource: DataSource) {
+  constructor(dataSource: DataSource) {
     super(Image, dataSource.createEntityManager());
-    setInterval(() => this.cleanupExpiredSessions(), 60 * 60 * 1000);
+  }
+
+  onModuleDestroy() {
+    clearInterval(this.cleanupTimer);
+  }
+
+  private async withImportSlot<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.activeImports < MAX_IMPORTS) {
+      this.activeImports++;
+    } else {
+      if (this.importWaiters.length >= MAX_WAITING_IMPORTS) {
+        throw new ServiceUnavailableException("Trop d'imports en cours");
+      }
+      await new Promise<void>((resolve) => this.importWaiters.push(resolve));
+    }
+    try {
+      return await operation();
+    } finally {
+      const next = this.importWaiters.shift();
+      if (next) next();
+      else this.activeImports--;
+    }
   }
 
   async findByCategory(categoryId: string): Promise<Image[]> {
@@ -63,7 +138,7 @@ export class ImageRepository extends Repository<Image> {
       throw new HttpException('Image non trouvée', HttpStatus.NOT_FOUND);
     }
 
-    return `${config.image_path}/img/${image.category}/${image.path}`;
+    return imageOriginalPath(config.image_path, image);
   }
 
   async sendImageBlur(id: string) {
@@ -77,43 +152,123 @@ export class ImageRepository extends Repository<Image> {
       throw new HttpException('Image non trouvée', HttpStatus.NOT_FOUND);
     }
 
-    const nameWithBlur = `${image.name.split('.')[0]}.blur.${image.name.split('.')[1]}`;
-    const imagePath = `${config.image_path}/img/${image.category}/${image.path}`;
-
-    // Vérification si l'image floutée existe déjà
-    const blurredImagePath = `${config.image_path}/img/${image.category}/${nameWithBlur}`;
-
-    if (!fs.existsSync(blurredImagePath)) {
-      // Si l'image floutée n'existe pas, créer une version floutée
-      await sharp(imagePath).resize(25, 25).blur(10).toFile(blurredImagePath);
+    if (
+      isImageUuid(id) &&
+      (await variantMatchesSource(config.image_path, image))
+    ) {
+      const blur = join(
+        imageVariantDirectory(config.image_path, id),
+        'blur.webp',
+      );
+      if (await isRegularFile(blur)) return blur;
     }
 
-    return blurredImagePath;
+    const [base, extension] = image.name.split('.');
+    const legacyBlur = `${base}.blur.${extension}`;
+    if (extension && isImageSegment(legacyBlur)) {
+      const path = imageOriginalPath(config.image_path, {
+        ...image,
+        path: legacyBlur,
+      });
+      if (await isRegularFile(path)) return path;
+    }
+    // A missing placeholder must not trigger a second full-resolution download.
+    throw new NotFoundException();
   }
 
-  async createImage(categoryId: string, files: File[]): Promise<Image[]> {
-    const numberMax =
-      (await this.count({
-        where: {
-          category: categoryId,
-        },
-      })) + 1;
-    return await Promise.all(
-      files.map(async (file, i) => {
-        const newId = uuidv4();
-        const path = `${newId}.${(file.originalname ?? '').split('.').slice(-1)[0]}`;
-        const image = this.create({
-          id: newId,
-          category: categoryId,
-          name: file.originalname ?? '',
-          path,
-          ordered: numberMax + i,
-        });
-        await this.uploadImage({ categoryId, name: path, file });
-        const saved = await this.save(image);
-        return saved;
-      }),
+  async sendImageVariant(id: string, width: string) {
+    if (!isImageUuid(id) || !isVariantWidth(width))
+      throw new NotFoundException();
+    const filename = join(
+      imageVariantDirectory(config.image_path, id),
+      `${width}.webp`,
     );
+    if (!(await isRegularFile(filename))) throw new NotFoundException();
+
+    // Category DELETE cascades in SQLite but does not remove files from disk.
+    // Disabled categories are still readable by UUID on the original route.
+    const image = await this.findOne({
+      where: { id },
+      select: { id: true, category: true, path: true },
+    });
+    if (!image || !(await variantMatchesSource(config.image_path, image))) {
+      throw new NotFoundException();
+    }
+    return filename;
+  }
+
+  async createImage(category: string, files: ImageUpload[]): Promise<Image[]> {
+    validateCategory(category);
+    const saved: Image[] = [];
+    for (const file of files) {
+      saved.push(
+        await this.withImportSlot(async () => {
+          const id = uuidv4();
+          return this.saveImport(
+            id,
+            category,
+            file.originalname,
+            async (staged) => {
+              try {
+                // Keep the legacy re-encode (including metadata stripping), but bake in EXIF orientation.
+                await sharp(file.buffer, { limitInputPixels: MAX_IMAGE_PIXELS })
+                  .autoOrient()
+                  .toFile(staged);
+              } catch {
+                throw new BadRequestException(
+                  "Le fichier n'est pas une image valide ou prise en charge",
+                );
+              }
+            },
+          );
+        }),
+      );
+    }
+    return saved;
+  }
+
+  private async saveImport(
+    id: string,
+    category: string,
+    name: string,
+    writeOriginal: (staged: string) => Promise<void>,
+  ): Promise<Image> {
+    const image = this.create({
+      id,
+      category,
+      name,
+      path: importPath(id, name),
+    });
+    const original = imageOriginalPath(config.image_path, image);
+    const directory = join(config.image_path, 'img', category);
+    await mkdir(directory, { recursive: true });
+    const staging = await mkdtemp(join(directory, '.import-'));
+    let saved: Image;
+    try {
+      const staged = join(staging, image.path);
+      await writeOriginal(staged);
+      image.ordered = (await this.count({ where: { category } })) + 1;
+      await rename(staged, original);
+      try {
+        saved = await this.save(image);
+      } catch (error) {
+        await rm(original, { force: true });
+        throw error;
+      }
+    } finally {
+      await rm(staging, { recursive: true, force: true }).catch(() => {
+        this.logger.warn('Temporary import directory pending cleanup');
+      });
+    }
+    try {
+      await generateImageVariants(config.image_path, saved, original);
+      if (!(await this.existsBy({ id })))
+        await removeImageVariants(config.image_path, id);
+    } catch {
+      // The original is committed; generation failure must not cause duplicate imports on retry.
+      this.logger.warn('Image import completed without precomputed variants');
+    }
+    return saved;
   }
 
   async deleteImage(id: string): Promise<void> {
@@ -122,18 +277,17 @@ export class ImageRepository extends Repository<Image> {
       throw new NotFoundException(`Image with ID ${id} not found`);
     }
 
-    const imagePath = join(
-      config.image_path,
-      'img',
-      image.category,
-      image.path,
-    );
-
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
+    try {
+      await unlink(imageOriginalPath(config.image_path, image));
+    } catch (error) {
+      if (!isMissingFile(error)) throw error;
     }
-
     await this.delete(id);
+    try {
+      await removeImageVariants(config.image_path, id);
+    } catch {
+      this.logger.warn('Deleted image has precomputed files pending cleanup');
+    }
   }
 
   async updateImage(
@@ -150,24 +304,6 @@ export class ImageRepository extends Repository<Image> {
     }
   }
 
-  private async uploadImage({
-    categoryId,
-    name,
-    file,
-  }: {
-    categoryId: string;
-    name: string;
-    file: File;
-  }) {
-    const directoryPath = `${config.image_path}/img/${categoryId}`;
-    if (!fs.existsSync(directoryPath)) {
-      fs.mkdirSync(directoryPath, { recursive: true });
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    await sharp(file.buffer).toFile(`${directoryPath}/${name}`);
-  }
-
   initiateChunkUpload(initiateUploadDto: InitiateUploadDto) {
     const {
       fileHash,
@@ -175,25 +311,49 @@ export class ImageRepository extends Repository<Image> {
       category,
       fileSize,
       chunkSize = 512 * 1024,
-    } = initiateUploadDto; // 512KB en prod, 1MB en dev
-
-    const totalChunks = Math.ceil(fileSize / chunkSize);
-
-    // Créer le répertoire temporaire pour les chunks
-    const tempDir = join(config.image_path, 'img', 'temp', fileHash);
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
+    } = initiateUploadDto;
+    validateCategory(category);
+    importPath('upload', fileName);
+    if (
+      typeof fileHash !== 'string' ||
+      !SAFE_UPLOAD_KEY.test(fileHash) ||
+      !Number.isSafeInteger(fileSize) ||
+      fileSize < 1 ||
+      fileSize > MAX_CHUNKED_IMAGE_BYTES ||
+      !Number.isSafeInteger(chunkSize) ||
+      chunkSize < 64 * 1024 ||
+      chunkSize > CHUNK_LIMIT
+    ) {
+      throw new BadRequestException("Paramètres d'upload invalides");
+    }
+    if (this.uploadSessions.get(fileHash)?.completing) {
+      throw new BadRequestException('Finalisation déjà en cours');
+    }
+    if (
+      !this.uploadSessions.has(fileHash) &&
+      this.uploadSessions.size >= MAX_CHUNK_SESSIONS
+    ) {
+      throw new ServiceUnavailableException(
+        "Trop de sessions d'upload en cours",
+      );
     }
 
+    const totalChunks = Math.ceil(fileSize / chunkSize);
+    this.cleanupTempFiles(fileHash);
+    fs.mkdirSync(join(config.image_path, 'img', 'temp', fileHash), {
+      recursive: true,
+    });
+
     const session: ChunkUploadSession = {
-      fileHash,
       fileName,
       category,
       totalChunks,
       fileSize,
+      chunkSize,
       uploadedChunks: new Set(),
       chunkPaths: new Map(),
       createdAt: new Date(),
+      completing: false,
     };
 
     this.uploadSessions.set(fileHash, session);
@@ -206,24 +366,32 @@ export class ImageRepository extends Repository<Image> {
     };
   }
 
-  uploadChunk(chunk: File, chunkUploadDto: ChunkUploadDto) {
+  uploadChunk(chunk: ImageUpload, chunkUploadDto: ChunkUploadDto) {
     const { fileHash } = chunkUploadDto;
 
-    // Convertir les chaînes en nombres
-    const chunkIndex = parseInt(chunkUploadDto.chunkIndex.toString(), 10);
-    const totalChunks = parseInt(chunkUploadDto.totalChunks.toString(), 10);
+    const chunkIndex = Number(chunkUploadDto.chunkIndex ?? NaN);
+    const totalChunks = Number(chunkUploadDto.totalChunks ?? NaN);
 
     const session = this.uploadSessions.get(fileHash);
     if (!session) {
       throw new BadRequestException("Session d'upload non trouvée");
     }
 
-    if (isNaN(chunkIndex) || isNaN(totalChunks)) {
+    if (
+      session.completing ||
+      totalChunks !== session.totalChunks ||
+      !Number.isSafeInteger(chunkIndex) ||
+      chunkIndex < 0 ||
+      chunkIndex >= totalChunks
+    ) {
       throw new BadRequestException('Index de chunk ou nombre total invalide');
     }
-
-    if (chunkIndex >= totalChunks || chunkIndex < 0) {
-      throw new BadRequestException('Index de chunk invalide');
+    const expected = Math.min(
+      session.chunkSize,
+      session.fileSize - chunkIndex * session.chunkSize,
+    );
+    if (chunk?.buffer?.length !== expected) {
+      throw new BadRequestException('Taille de chunk invalide');
     }
 
     if (session.uploadedChunks.has(chunkIndex)) {
@@ -233,12 +401,10 @@ export class ImageRepository extends Repository<Image> {
     const tempDir = join(config.image_path, 'img', 'temp', fileHash);
     const chunkPath = join(tempDir, `chunk_${chunkIndex}`);
 
-    // Sauvegarder le chunk
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     fs.writeFileSync(chunkPath, chunk.buffer);
 
     session.uploadedChunks.add(chunkIndex);
-    session.chunkPaths.set(chunkIndex, chunkPath); // Utiliser l'index numérique comme clé
+    session.chunkPaths.set(chunkIndex, chunkPath);
 
     return {
       success: true,
@@ -272,96 +438,56 @@ export class ImageRepository extends Repository<Image> {
       throw new BadRequestException("Session d'upload non trouvée");
     }
 
+    if (session.completing || category !== session.category) {
+      throw new BadRequestException('Finalisation invalide');
+    }
     if (session.uploadedChunks.size !== session.totalChunks) {
-      throw new BadRequestException(
-        `Tous les chunks ne sont pas uploadés: ${session.uploadedChunks.size}/${session.totalChunks}`,
-      );
+      throw new BadRequestException('Tous les chunks ne sont pas uploadés');
     }
 
+    const { fileName, totalChunks, chunkPaths, fileSize } = session;
+    session.completing = true;
     try {
-      // Assembler les chunks
-      const finalFileName = `${uuidv4()}.${session.fileName.split('.').pop()}`;
-      const finalPath = join(config.image_path, 'img', category, finalFileName);
-
-      // Créer le répertoire de destination si nécessaire
-      const hikeDir = join(config.image_path, 'img', category);
-      if (!fs.existsSync(hikeDir)) {
-        fs.mkdirSync(hikeDir, { recursive: true });
-      }
-
-      // Assembler les chunks dans l'ordre
-      const writeStream = fs.createWriteStream(finalPath);
-      for (let i = 0; i < session.totalChunks; i++) {
-        // Les clés peuvent être des chaînes, essayer les deux
-        const chunkPath =
-          session.chunkPaths.get(i) || session.chunkPaths.get(i.toString());
-
-        if (!chunkPath || !fs.existsSync(chunkPath)) {
-          throw new BadRequestException(`Chunk ${i} manquant`);
+      return await this.withImportSlot(async () => {
+        try {
+          return await this.saveImport(
+            uuidv4(),
+            category,
+            fileName,
+            async (staged) => {
+              async function* chunks() {
+                for (let i = 0; i < totalChunks; i++) {
+                  const path = chunkPaths.get(i);
+                  if (!path)
+                    throw new BadRequestException(`Chunk ${i} manquant`);
+                  yield* fs.createReadStream(path);
+                }
+              }
+              await pipeline(
+                Readable.from(chunks()),
+                fs.createWriteStream(staged, { flags: 'wx' }),
+              );
+              if ((await stat(staged)).size !== fileSize) {
+                throw new BadRequestException('Taille du fichier incorrecte');
+              }
+              try {
+                await sharp(staged, {
+                  limitInputPixels: MAX_IMAGE_PIXELS,
+                }).metadata();
+              } catch {
+                throw new BadRequestException(
+                  "Le fichier n'est pas une image valide ou prise en charge",
+                );
+              }
+            },
+          );
+        } finally {
+          this.uploadSessions.delete(fileHash);
+          this.cleanupTempFiles(fileHash);
         }
-        const chunkData = fs.readFileSync(chunkPath);
-        writeStream.write(chunkData);
-      }
-      writeStream.end();
-
-      // Attendre que l'écriture soit terminée
-      await new Promise((resolve, reject) => {
-        writeStream.on('finish', resolve as () => void);
-        writeStream.on('error', reject);
       });
-
-      // Vérifier que le fichier final existe et sa taille
-      if (!fs.existsSync(finalPath)) {
-        throw new BadRequestException('Fichier final non créé');
-      }
-
-      // Vérifier que la taille du fichier correspond à la taille attendue
-      const finalFileStats = fs.statSync(finalPath);
-      if (finalFileStats.size !== session.fileSize) {
-        console.error(
-          `Taille du fichier incorrecte: attendu ${session.fileSize}, obtenu ${finalFileStats.size}`,
-        );
-        throw new BadRequestException(
-          `Taille du fichier incorrecte: attendu ${session.fileSize}, obtenu ${finalFileStats.size}`,
-        );
-      }
-
-      try {
-        // Validation que le fichier est une image valide sans compression
-        await sharp(finalPath).metadata();
-      } catch (sharpError) {
-        console.error('Erreur Sharp:', sharpError);
-        throw new BadRequestException("Le fichier n'est pas une image valide");
-      }
-
-      // Obtenir le nombre d'images existantes pour l'ordre
-      const numberMax = (await this.count({ where: { category } })) + 1;
-
-      // Créer l'entrée en base de données
-      const newImage = new Image();
-      newImage.id = uuidv4();
-      newImage.name = session.fileName ?? '';
-      newImage.category = category;
-      newImage.path = finalFileName;
-      newImage.ordered = numberMax;
-
-      const savedImage = await this.save(newImage);
-
-      // Nettoyer les fichiers temporaires
-      this.cleanupTempFiles(fileHash);
-      this.uploadSessions.delete(fileHash);
-
-      return savedImage;
-    } catch (error) {
-      // Nettoyer en cas d'erreur
-      console.error('ERREUR lors de la finalisation:', error);
-      console.error(
-        'Stack trace:',
-        error instanceof Error ? error.stack : 'N/A',
-      );
-      this.cleanupTempFiles(fileHash);
-      this.uploadSessions.delete(fileHash);
-      throw error;
+    } finally {
+      session.completing = false;
     }
   }
 
@@ -372,6 +498,8 @@ export class ImageRepository extends Repository<Image> {
       return { success: true, message: 'Upload déjà annulé' };
     }
 
+    if (session.completing)
+      throw new BadRequestException('Finalisation déjà en cours');
     this.cleanupTempFiles(fileHash);
     this.uploadSessions.delete(fileHash);
 
@@ -380,8 +508,10 @@ export class ImageRepository extends Repository<Image> {
 
   private cleanupTempFiles(fileHash: string) {
     const tempDir = join(config.image_path, 'img', 'temp', fileHash);
-    if (fs.existsSync(tempDir)) {
+    try {
       fs.rmSync(tempDir, { recursive: true, force: true });
+    } catch {
+      this.logger.warn('Temporary upload files pending cleanup');
     }
   }
 
@@ -390,7 +520,10 @@ export class ImageRepository extends Repository<Image> {
     const expireTime = 24 * 60 * 60 * 1000; // 24 heures
 
     for (const [fileHash, session] of this.uploadSessions.entries()) {
-      if (now.getTime() - session.createdAt.getTime() > expireTime) {
+      if (
+        !session.completing &&
+        now.getTime() - session.createdAt.getTime() > expireTime
+      ) {
         this.cleanupTempFiles(fileHash);
         this.uploadSessions.delete(fileHash);
       }
