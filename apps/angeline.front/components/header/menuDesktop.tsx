@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { portfolioPath } from "@/lib/seo";
 import { useCategoriesActive } from "@/queries/useCategory";
 import type { Category } from "@repo/types/entities";
@@ -19,6 +20,7 @@ const MenuDesktop = ({
 }: {
   categories: Category[];
 }) => {
+  const [openMenu, setOpenMenu] = useState("");
   const { data: categories, isPending } =
     useCategoriesActive(initialCategories);
 
@@ -27,7 +29,12 @@ const MenuDesktop = ({
   );
 
   return (
-    <NavigationMenu viewport={false} className="w-full max-w-[100vw] flex-none">
+    <NavigationMenu
+      viewport={false}
+      value={openMenu}
+      onValueChange={setOpenMenu}
+      className="w-full max-w-[100vw] flex-none"
+    >
       <NavigationMenuList className="w-9/12 mt-8 mx-auto font-bold font-helvetica text-md text-center">
         <NavigationMenuItem>
           <NavigationMenuLink asChild>
@@ -41,32 +48,36 @@ const MenuDesktop = ({
             </Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
-        <NavigationMenuItem>
+        <NavigationMenuItem value="reportages">
           <NavigationMenuTrigger className="hover:text-primary transition">
-            <p className="font-bold">REPORTAGE</p>
-            <NavigationMenuContent className="bg-white z-50">
-              <ul className="grid gap-0.5 md:w-[400px] lg:w-[500px]">
-                {isPending ? (
-                  <div className="flex justify-center items-center h-full w-full min-w-32 min-h-10">
-                    <Loader2 className="animate-spin text-primary" />
-                  </div>
-                ) : (
-                  (categoriesFiltered || []).map((category) => (
-                    <li className="row-span-3" key={category.id}>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href={portfolioPath(category)}
-                          className="hover:bg-primary/20 transition rounded-md px-2 py-1 font-semibold"
-                        >
-                          {category.name}
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </NavigationMenuContent>
+            <span className="font-bold">REPORTAGE</span>
           </NavigationMenuTrigger>
+          <NavigationMenuContent
+            forceMount
+            inert={openMenu !== "reportages"}
+            className="bg-white z-50 transition-[visibility] data-[state=closed]:invisible data-[state=closed]:fill-mode-forwards"
+          >
+            <ul className="grid gap-0.5 md:w-[400px] lg:w-[500px]">
+              {isPending ? (
+                <li className="flex justify-center items-center h-full w-full min-w-32 min-h-10">
+                  <Loader2 className="animate-spin text-primary" />
+                </li>
+              ) : (
+                (categoriesFiltered || []).map((category) => (
+                  <li className="row-span-3" key={category.id}>
+                    <NavigationMenuLink asChild>
+                      <Link
+                        href={portfolioPath(category)}
+                        className="hover:bg-primary/20 transition rounded-md px-2 py-1 font-semibold"
+                      >
+                        {category.name}
+                      </Link>
+                    </NavigationMenuLink>
+                  </li>
+                ))
+              )}
+            </ul>
+          </NavigationMenuContent>
         </NavigationMenuItem>
         <NavigationMenuItem>
           <NavigationMenuLink asChild>

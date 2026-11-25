@@ -50,15 +50,24 @@ function AccordionTrigger({
 function AccordionContent({
   className,
   children,
+  forceMount,
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Content>) {
+  const content = <div className={cn("pt-0 pb-4", className)}>{children}</div>
+
   return (
     <AccordionPrimitive.Content
       data-slot="accordion-content"
-      className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm"
+      forceMount={forceMount}
+      className={cn(
+        "overflow-hidden text-sm",
+        forceMount
+          ? "grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out data-[state=open]:grid-rows-[1fr] motion-reduce:transition-none"
+          : "data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+      )}
       {...props}
     >
-      <div className={cn("pt-0 pb-4", className)}>{children}</div>
+      {forceMount ? <div className="overflow-hidden">{content}</div> : content}
     </AccordionPrimitive.Content>
   )
 }

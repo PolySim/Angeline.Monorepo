@@ -166,7 +166,7 @@ const MenuMobile = ({
                     Reportages
                   </h3>
                 </AccordionTrigger>
-                <AccordionContent>
+                <AccordionContent forceMount inert={!isReportagesOpen}>
                   <div>
                     {(categories || [])
                       .filter((category) => category.ordered > 3)
