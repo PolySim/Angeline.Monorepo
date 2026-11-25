@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { portfolioPath } from "@/lib/seo";
 import { useCategoryById } from "@/queries/useCategory";
 import { useImages } from "@/queries/useImage";
 import { AdminError, AdminLoading, AdminPageHeader } from "../../adminUi";
@@ -16,6 +19,20 @@ export default function UpdateReportContainer() {
       <AdminPageHeader
         title={category.data?.name || "Modifier le reportage"}
         description="Complétez les informations du reportage et organisez ses images."
+        action={
+          category.data && !category.isError ? (
+            <Button asChild variant="outline">
+              <Link
+                href={category.data.disabled
+                  ? `/admin/category/${encodeURIComponent(category.data.id)}/preview`
+                  : portfolioPath(category.data)}
+                prefetch={false}
+              >
+                {category.data.disabled ? "Aperçu privé" : "Voir le reportage publié"}
+              </Link>
+            </Button>
+          ) : undefined
+        }
         back
       />
       {category.isPending ? (
@@ -46,7 +63,7 @@ export default function UpdateReportContainer() {
               </div>
               {!!images.data?.length && <DownloadCategoryButton />}
             </div>
-            <AddImage />
+            <AddImage key={category.data.id} />
             {images.isPending ? (
               <AdminLoading label="Chargement des images…" />
             ) : images.isError ? (

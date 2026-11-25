@@ -1,10 +1,8 @@
 "use client";
 
 import type { Category, Image as ImageType } from "@repo/types/entities";
-import Image from "next/image";
-import { useState } from "react";
 import { config } from "@/config/config";
-import { cn } from "@/lib/utils";
+import GalleryPhoto from "./GalleryPhoto";
 import ImageContainer from "./ImageContainer";
 
 const ImageElement = ({
@@ -16,51 +14,37 @@ const ImageElement = ({
   image: ImageType;
   images: ImageType[];
 }) => {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const src = `${config.IMAGE_URL}/image/${image.id}`;
+  const alt =
+    image.description ||
+    image.name ||
+    "Photographie reportage Angeline Desdevises";
 
   return (
-    <ImageContainer category={category} imageId={image.id} images={images}>
-      <div
-        className="overflow-hidden relative"
+    <ImageContainer
+      category={category}
+      imageId={image.id}
+      images={images}
+      label={`Agrandir : ${alt}`}
+    >
+      <span
+        className="block overflow-hidden relative"
         onContextMenu={(e) => e.preventDefault()}
       >
-        {!isLoaded && (
-          <>
-            <Image
-              src={`${config.IMAGE_URL}/image/${image.id}/blur`}
-              alt=""
-              aria-hidden="true"
-              width={500}
-              height={325}
-              unoptimized
-              loading="lazy"
-              className="w-full"
-            />
-            <div className="absolute inset-0 backdrop-blur-sm" />
-          </>
-        )}
-        <Image
-          src={`${config.IMAGE_URL}/image/${image.id}`}
-          alt={
-            image.description ||
-            image.name ||
-            "Photographie reportage Angeline Desdevises"
-          }
+        <GalleryPhoto
+          src={src}
+          blurSrc={`${src}/blur`}
+          alt={alt}
           width={500}
           height={325}
           sizes="(max-width: 768px) 50vw, (max-width: 1152px) 33vw, 368px"
-          onLoad={() => setIsLoaded(true)}
-          loading="lazy"
-          className={cn("w-full h-auto", {
-            "absolute top-0 left-0 -z-10": !isLoaded,
-          })}
         />
-        {image.description && image.description !== "" && (
-          <span className="flex justify-center bg-white/50 w-full text-center py-2 opacity-0 group-hover:opacity-100 transition -translate-y-1/2 group-hover:-translate-y-full backdrop-blur-md">
+        {image.description && (
+          <span className="flex justify-center bg-white/50 w-full text-center py-2 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition -translate-y-1/2 group-hover:-translate-y-full group-focus-visible:-translate-y-full backdrop-blur-md">
             {image.description}
           </span>
         )}
-      </div>
+      </span>
     </ImageContainer>
   );
 };

@@ -1,4 +1,3 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import { Lang } from "@repo/types/entities";
 import type { Metadata } from "next";
 import { getBiography } from "@/action/information.action";
@@ -68,17 +67,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <html lang="fr">
+    <html lang="fr">
+      <body className="antialiased min-h-screen w-screen flex flex-col">
         <ReactQueryProvider>
-          <body className="antialiased min-h-screen w-screen flex flex-col">
-            {children}
-            <Toaster richColors closeButton />
-            <WindowSizeInitializer />
-            <UmamiAnalytics />
-          </body>
+          {children}
+          <Toaster richColors closeButton />
+          <WindowSizeInitializer />
+          <UmamiAnalytics />
         </ReactQueryProvider>
-      </html>
-    </ClerkProvider>
+      </body>
+    </html>
   );
 }

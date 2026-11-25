@@ -67,15 +67,16 @@ const MediaGrid = ({
                     category={category}
                     imageId={image.id}
                     images={images}
+                    label={`Lire le texte : ${category.name || "Reportage"}`}
                   >
-                    <div className="flex flex-col justify-center items-center w-full aspect-video">
-                      <p className="w-10/12 text-md text-gray-700">
+                    <span className="flex flex-col justify-center items-center w-full aspect-video">
+                      <span className="w-10/12 text-md text-gray-700">
                         {shortText(image.description ?? "")}
-                      </p>
-                      <p className="mt-2 pt-6 font-bold text-sm text-black">
+                      </span>
+                      <span className="mt-2 pt-6 font-bold text-sm text-black">
                         READ MORE
-                      </p>
-                    </div>
+                      </span>
+                    </span>
                   </ImageContainer>
                 ) : (
                   <ImageElement

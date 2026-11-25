@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -53,7 +54,9 @@ export default function SignInLayout({
             />
           </div>
           <div className="flex min-w-0 flex-col justify-center px-6 py-10 sm:p-10 lg:px-12 lg:py-14">
-            <div className="mx-auto w-full max-w-sm">{children}</div>
+            <div className="mx-auto w-full max-w-sm">
+              <ClerkProvider>{children}</ClerkProvider>
+            </div>
           </div>
         </div>
       </main>

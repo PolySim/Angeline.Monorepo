@@ -158,12 +158,19 @@ const calculateFileHash = async (file: File) => {
   return Math.abs(hash).toString(16);
 };
 
+type ChunkUploadResult =
+  | { success: true; data: Image }
+  | { success: false; error: string; uncertain?: boolean };
+
 export const useCreateImageByChunks = () => {
   const queryClient = useQueryClient();
   const { pageId } = useAppParams();
 
   return useMutation({
-    mutationFn: async (file: File) => {
+    retry: false,
+    mutationFn: async (file: File): Promise<ChunkUploadResult> => {
+      let activeHash: string | undefined;
+      let completing = false;
       try {
         const CHUNK_SIZE = 512 * 1024; // 512KB
         const fileHash = await calculateFileHash(file);
@@ -182,6 +189,7 @@ export const useCreateImageByChunks = () => {
           return { success: false, error: "Échec de l'initiation de l'upload" };
         }
 
+        activeHash = fileHash;
         // Étape 2: Uploader chaque chunk
         for (let i = 0; i < totalChunks; i++) {
           const start = i * CHUNK_SIZE;
@@ -205,17 +213,21 @@ export const useCreateImageByChunks = () => {
           }
         }
 
-        // Étape 3: Finaliser l'upload
+        // Once completion starts, a lost response may mean the image was saved.
+        completing = true;
         const completeResult = await completeChunkUpload({
           fileHash,
           categoryId: pageId,
         });
 
         if (!completeResult.success) {
-          console.error("Échec finalisation");
+          if (!completeResult.uncertain) await cancelChunkUpload(fileHash);
           return {
             success: false,
-            error: "Échec de la finalisation de l'upload",
+            uncertain: completeResult.uncertain,
+            error: completeResult.uncertain
+              ? "Import non confirmé. Vérifiez la liste des images."
+              : "Échec de la finalisation de l'upload",
           };
         }
 
@@ -230,15 +242,17 @@ export const useCreateImageByChunks = () => {
           error instanceof Error ? error.stack : "N/A",
         );
 
-        // Essayer d'annuler si on a le fileHash
-        try {
-          const fileHash = await calculateFileHash(file);
-          await cancelChunkUpload(fileHash);
-        } catch (cancelError) {
-          console.error("Erreur lors de l'annulation:", cancelError);
+        if (!completing && activeHash) {
+          await cancelChunkUpload(activeHash).catch(() => undefined);
         }
 
-        return { success: false, error: "Erreur inattendue lors de l'upload" };
+        return {
+          success: false,
+          uncertain: completing,
+          error: completing
+            ? "Import non confirmé. Vérifiez la liste des images."
+            : "Erreur inattendue lors de l'upload",
+        };
       }
     },
     onMutate: () => {
@@ -248,10 +262,9 @@ export const useCreateImageByChunks = () => {
       if (data.success) {
         toast.success("Image uploadée avec succès");
         if (data.data) {
-          queryClient.setQueryData(["images", pageId], (old: Image[]) => [
-            ...(old || []),
-            data.data,
-          ]);
+          queryClient.setQueryData(["images", pageId], (old: Image[] = []) =>
+            old.some(({ id }) => id === data.data.id) ? old : [...old, data.data],
+          );
         }
       } else {
         toast.error(data.error || "Erreur lors de l'upload de l'image");

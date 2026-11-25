@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import AdminShell from "./adminShell";
 import "./admin.css";
@@ -19,5 +20,9 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <ClerkProvider>
+      <AdminShell>{children}</AdminShell>
+    </ClerkProvider>
+  );
 }

@@ -1,42 +1,56 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCreateImageByChunks } from "@/queries/useImage";
 import { useRef, useState } from "react";
 
+const fileKey = (file: File) =>
+  JSON.stringify([file.name, file.size, file.type, file.lastModified]);
+
 const AddImage = () => {
-  const input = useRef<HTMLInputElement>(null);
+  const busy = useRef(false);
+  const selected = useRef(new Set<string>());
   const [isPending, setIsPending] = useState(false);
   const [progress, setProgress] = useState({
     total: 0,
-    completed: 0,
-    failed: [] as string[],
+    added: 0,
+    failed: [] as File[],
+    uncertain: [] as File[],
   });
   const { mutateAsync: uploadImage } = useCreateImageByChunks();
 
-  const onSubmit = async (data: FileList | null) => {
-    if (!data?.length || isPending) return;
-    const files = Array.from(data);
+  const runBatch = async (selection: File[], retry = false) => {
+    if (busy.current) return;
+    const files = retry ? selection : selection.filter((file) => {
+      const key = fileKey(file);
+      if (selected.current.has(key)) return false;
+      selected.current.add(key);
+      return true;
+    });
+    if (!files.length) return;
+
+    busy.current = true;
     setIsPending(true);
-    setProgress({ total: files.length, completed: 0, failed: [] });
+    setProgress((current) => retry
+      ? { ...current, failed: [] }
+      : { ...current, total: current.total + files.length });
     try {
-      // Limit memory and chunk requests by uploading one file at a time.
+      // Upload one file at a time, keeping only the files that need attention.
       for (const file of files) {
-        let success = false;
-        try {
-          success = (await uploadImage(file)).success;
-        } catch {
-          /* The mutation reports the error. */
-        }
-        setProgress((current) => ({
-          ...current,
-          completed: current.completed + 1,
-          failed: success ? current.failed : [...current.failed, file.name],
+        const result = await uploadImage(file).catch(() => ({
+          success: false as const,
+          uncertain: true,
         }));
+        setProgress((current) => result.success
+          ? { ...current, added: current.added + 1 }
+          : result.uncertain
+            ? { ...current, uncertain: [...current.uncertain, file] }
+            : { ...current, failed: [...current.failed, file] });
       }
     } finally {
+      busy.current = false;
       setIsPending(false);
-      if (input.current) input.current.value = "";
     }
   };
 
@@ -47,11 +61,14 @@ const AddImage = () => {
       </label>
       <Input
         id="report-images"
-        ref={input}
         type="file"
         multiple
         accept="image/*"
-        onChange={(event) => void onSubmit(event.target.files)}
+        onChange={(event) => {
+          const files = Array.from(event.currentTarget.files ?? []);
+          event.currentTarget.value = "";
+          void runBatch(files);
+        }}
         disabled={isPending}
         aria-describedby="upload-progress"
         className="bg-white"
@@ -62,9 +79,9 @@ const AddImage = () => {
         className="text-sm text-gray-600 mt-2"
       >
         {isPending
-          ? `Import en cours : ${progress.completed} / ${progress.total}. Gardez cette page ouverte.`
+          ? `Import en cours : ${progress.added + progress.failed.length + progress.uncertain.length} / ${progress.total}. Gardez cette page ouverte.`
           : progress.total
-            ? `${progress.completed - progress.failed.length} / ${progress.total} images ajoutées.${progress.failed.length ? " Réessayez les fichiers en échec." : ""}`
+            ? `${progress.added} / ${progress.total} images ajoutées.${progress.failed.length ? " Réessayez les fichiers en échec." : ""}`
             : "Vous pouvez sélectionner plusieurs photographies."}
       </p>
       {progress.failed.length > 0 && (
@@ -72,12 +89,25 @@ const AddImage = () => {
           aria-label="Fichiers à réessayer"
           className="mt-2 text-sm text-red-700 list-disc pl-5"
         >
-          {progress.failed.map((name, index) => (
-            <li key={index} className="break-words">
-              {name}
-            </li>
+          {progress.failed.map((file) => (
+            <li key={fileKey(file)} className="break-words">{file.name}</li>
           ))}
         </ul>
+      )}
+      {progress.failed.length > 0 && !isPending && (
+        <Button className="mt-3" variant="outline" type="button" onClick={() => void runBatch(progress.failed, true)}>
+          Réessayer les fichiers en échec
+        </Button>
+      )}
+      {progress.uncertain.length > 0 && (
+        <div className="mt-3 text-sm text-red-700" role="status">
+          <p>Import non confirmé. Vérifiez la liste des images avant de les sélectionner à nouveau pour éviter les doublons.</p>
+          <ul aria-label="Fichiers à vérifier" className="list-disc pl-5">
+            {progress.uncertain.map((file) => (
+              <li key={fileKey(file)} className="break-words">{file.name}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

@@ -1,9 +1,9 @@
 "use client";
 
 import type { Category, Image as ImageType } from "@repo/types/entities";
-import Image from "next/image";
 import React from "react";
 import { config } from "@/config/config";
+import GalleryPhoto from "./GalleryPhoto";
 
 const ImagesCarroussel = ({
   category,
@@ -36,15 +36,14 @@ const ImagesCarroussel = ({
       {imagesRefactor.map((image) => (
         <React.Fragment key={image.id}>
           {image.id === "article" ? (
-            <div className="flex justify-center items-center max-h-screen w-screen my-12 snap-center min-w-screen">
+            <div className="flex justify-center items-center max-h-screen w-full my-12 snap-center shrink-0">
               <p className="w-11/12 md:w-10/12 h-fit max-h-[95vh] p-12 text-base text-gray-700 shadow-sm overflow-y-scroll rounded-lg leading-7 bg-white">
                 {image.description}
               </p>
             </div>
           ) : (
-            <div className="h-screen w-screen bg-transparent snap-center min-w-screen pointer-none:">
-              <Image
-                className="object-contain h-full w-full"
+            <div className="h-full w-full shrink-0 bg-transparent snap-center">
+              <GalleryPhoto
                 src={`${config.IMAGE_URL}/image/${image.id}`}
                 alt={
                   image.description ||
@@ -53,6 +52,7 @@ const ImagesCarroussel = ({
                 }
                 width={1920}
                 height={1080}
+                sizes="100vw"
               />
             </div>
           )}

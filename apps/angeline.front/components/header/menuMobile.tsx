@@ -2,7 +2,7 @@
 
 import { Camera, FileText, Info, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useAppParams } from "@/hook/useAppParams";
 import { getPortfolioIdFromParam, portfolioPath } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -28,11 +28,41 @@ const MenuMobile = ({
     useCategoriesActive(initialCategories);
   const { pageId } = useAppParams();
   const activePortfolioId = getPortfolioIdFromParam(pageId);
+  const menuId = useId();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLElement>(null);
+
+  const closeMenu = useCallback(() => {
+    const { isOpen, toggleOpen } = useMenuStore.getState();
+    if (!isOpen) return;
+    buttonRef.current?.focus({ preventScroll: true });
+    toggleOpen();
+    setIsReportagesOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      // The force-mounted desktop navigation can consume Escape even on mobile.
+      const inMenu =
+        event.target instanceof Node &&
+        (buttonRef.current === event.target || menuRef.current?.contains(event.target));
+      if (event.defaultPrevented && !inMenu) return;
+      event.preventDefault();
+      closeMenu();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, closeMenu]);
 
   return (
     <>
-      <BurgerMenuTrigger />
-      <div
+      <BurgerMenuTrigger controls={menuId} buttonRef={buttonRef} />
+      <nav
+        ref={menuRef}
+        id={menuId}
+        aria-label="Navigation principale"
         inert={!isOpen}
         aria-hidden={!isOpen}
         className={cn(
@@ -43,7 +73,8 @@ const MenuMobile = ({
         )}
       >
         {isPending ? (
-          <div className="flex justify-center items-center h-full p-4">
+          <div role="status" className="flex justify-center items-center h-full p-4">
+            <span className="sr-only">Chargement de la navigation</span>
             <Loader2 className="w-10 h-10 animate-spin text-primary" />
           </div>
         ) : (
@@ -67,10 +98,7 @@ const MenuMobile = ({
                           ?.id,
                     },
                   )}
-                  onClick={() => {
-                    useMenuStore.getState().toggleOpen();
-                    setIsReportagesOpen(false);
-                  }}
+                  onClick={closeMenu}
                 >
                   <Camera size={18} className="mr-3" />
                   Portfolio
@@ -88,10 +116,7 @@ const MenuMobile = ({
                           ?.id,
                     },
                   )}
-                  onClick={() => {
-                    useMenuStore.getState().toggleOpen();
-                    setIsReportagesOpen(false);
-                  }}
+                  onClick={closeMenu}
                 >
                   <Camera size={18} className="mr-3" />
                   Portraits
@@ -109,10 +134,7 @@ const MenuMobile = ({
                           ?.id,
                     },
                   )}
-                  onClick={() => {
-                    useMenuStore.getState().toggleOpen();
-                    setIsReportagesOpen(false);
-                  }}
+                  onClick={closeMenu}
                 >
                   <Camera size={18} className="mr-3" />
                   Publications
@@ -125,10 +147,7 @@ const MenuMobile = ({
                       "bg-primary/20 text-primary": pageId === "contact",
                     },
                   )}
-                  onClick={() => {
-                    useMenuStore.getState().toggleOpen();
-                    setIsReportagesOpen(false);
-                  }}
+                  onClick={closeMenu}
                 >
                   <Mail size={18} className="mr-3" />
                   Contact
@@ -141,10 +160,7 @@ const MenuMobile = ({
                       "bg-primary/20 text-primary": pageId === "apropos",
                     },
                   )}
-                  onClick={() => {
-                    useMenuStore.getState().toggleOpen();
-                    setIsReportagesOpen(false);
-                  }}
+                  onClick={closeMenu}
                 >
                   <Info size={18} className="mr-3" />A propos
                 </Link>
@@ -181,10 +197,7 @@ const MenuMobile = ({
                                 activePortfolioId === category.id,
                             },
                           )}
-                          onClick={() => {
-                            setIsReportagesOpen(false);
-                            useMenuStore.getState().toggleOpen();
-                          }}
+                          onClick={closeMenu}
                         >
                           {category.name}
                         </Link>
@@ -195,7 +208,7 @@ const MenuMobile = ({
             </Accordion>
           </div>
         )}
-      </div>
+      </nav>
     </>
   );
 };

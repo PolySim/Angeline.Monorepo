@@ -29,14 +29,9 @@ it("uploads sequentially and keeps the picker disabled until the batch finishes"
   upload.mockResolvedValueOnce({ success: false });
   render(<AddImage />);
   const input = screen.getByLabelText("Ajouter des images") as HTMLInputElement;
-  fireEvent.change(input, {
-    target: {
-      files: [
-        new File(["one"], "one.jpg", { type: "image/jpeg" }),
-        new File(["two"], "two.jpg", { type: "image/jpeg" }),
-      ],
-    },
-  });
+  const first = new File(["one"], "one.jpg", { type: "image/jpeg" });
+  const second = new File(["two"], "two.jpg", { type: "image/jpeg" });
+  fireEvent.change(input, { target: { files: [first, second, first] } });
   expect(input.disabled).toBe(true);
   expect(upload).toHaveBeenCalledTimes(1);
   await act(async () => finishFirst({ success: true }));
@@ -49,4 +44,31 @@ it("uploads sequentially and keeps the picker disabled until the batch finishes"
   expect(
     screen.getByRole("list", { name: "Fichiers à réessayer" }).textContent,
   ).toContain("two.jpg");
+
+  fireEvent.change(input, { target: { files: [first, second] } });
+  expect(upload).toHaveBeenCalledTimes(2);
+  let finishRetry!: (value: { success: boolean }) => void;
+  upload.mockImplementationOnce(() => new Promise((resolve) => { finishRetry = resolve; }));
+  const retry = screen.getByRole("button", { name: "Réessayer les fichiers en échec" });
+  fireEvent.click(retry);
+  fireEvent.click(retry);
+  expect(input.disabled).toBe(true);
+  expect(upload).toHaveBeenCalledTimes(3);
+  expect(upload.mock.calls[2][0]).toBe(second);
+  await act(async () => finishRetry({ success: true }));
+  expect(screen.getByRole("status").textContent).toContain("2 / 2 images ajoutées");
+  expect(screen.queryByRole("button", { name: /réessayer/i })).toBeNull();
+});
+
+it("does not retry a finalization whose result was lost", async () => {
+  upload.mockResolvedValueOnce({ success: false, uncertain: true });
+  render(<AddImage />);
+  const input = screen.getByLabelText("Ajouter des images");
+  const file = new File(["one"], "uncertain.jpg");
+  fireEvent.change(input, { target: { files: [file] } });
+  const list = await screen.findByRole("list", { name: "Fichiers à vérifier" });
+  expect(list.textContent).toContain(file.name);
+  expect(screen.queryByRole("button", { name: /réessayer/i })).toBeNull();
+  fireEvent.change(input, { target: { files: [file] } });
+  expect(upload).toHaveBeenCalledTimes(1);
 });

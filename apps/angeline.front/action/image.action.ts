@@ -310,16 +310,18 @@ export const completeChunkUpload = async ({
 }: {
   fileHash: string;
   categoryId: string;
-}) => {
+}): Promise<{ success: true; data: Image } | { success: false; uncertain: boolean }> => {
+  let sent = false;
   try {
     const { getToken } = await auth();
     const token = await getToken();
 
     if (!token) {
       console.error("Unauthorized for completing chunk upload");
-      return { success: false };
+      return { success: false, uncertain: false };
     }
 
+    sent = true;
     const res = await fetch(`${config.API_URL}/image/chunk/complete`, {
       method: "POST",
       headers: {
@@ -333,16 +335,21 @@ export const completeChunkUpload = async ({
     });
 
     if (!res.ok) {
-      console.error("Error in completing chunk upload", res.statusText);
-      return { success: false };
+      console.error("Error in completing chunk upload", res.status);
+      return { success: false, uncertain: res.status >= 500 || res.status === 408 };
     }
 
     const data = (await res.json()) as Image;
-    revalidateTag(`images-${categoryId}`);
+    if (!data?.id) return { success: false, uncertain: true };
+    try {
+      revalidateTag(`images-${categoryId}`);
+    } catch (error) {
+      console.error("Error revalidating images after upload", error);
+    }
     return { success: true, data };
   } catch (error) {
     console.error("Error in completing chunk upload", error);
-    return { success: false };
+    return { success: false, uncertain: sent };
   }
 };
 
